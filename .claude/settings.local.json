@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(npm create:*)",
+      "Bash(npm install:*)",
+      "Bash(npx cap:*)",
+      "Bash(npm run:*)",
+      "Read(//c/Users/Fuz/.claude/projects/c--Users-Fuz-Desktop-prj-item-quiz/**)"
+    ]
+  }
+}

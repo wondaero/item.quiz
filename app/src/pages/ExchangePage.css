@@ -1,0 +1,130 @@
+.exchange-page {
+  min-height: 100vh;
+  background: #0f0f0f;
+  color: #fff;
+  padding: 20px;
+}
+
+.exchange-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.exchange-header h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.back-btn {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+.exchange-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.points-display {
+  background: #1a1a1a;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.points-label {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.points-value {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #f5c518;
+}
+
+.exchange-notice {
+  background: #1a1a1a;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.exchange-notice p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.input-wrap {
+  display: flex;
+  align-items: center;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 12px;
+  gap: 8px;
+}
+
+.input-wrap input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 1rem;
+  outline: none;
+}
+
+.input-unit {
+  color: #888;
+}
+
+.exchange-preview {
+  text-align: center;
+  color: #f5c518;
+  font-weight: 700;
+}
+
+.btn-primary {
+  padding: 16px;
+  background: #f5c518;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.exchange-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-top: 80px;
+  text-align: center;
+}
+
+.success-icon {
+  font-size: 3rem;
+}
+
+.exchange-success h3 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.exchange-success p {
+  color: #888;
+  margin: 0;
+}

@@ -1,0 +1,233 @@
+.quiz-detail-page {
+  min-height: 100vh;
+  background: #0f0f0f;
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+}
+
+.quiz-detail-loading {
+  color: #555;
+  text-align: center;
+  margin-top: 40vh;
+}
+
+.ticket-phase, .ad-phase, .play-phase, .result-phase {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.ad-notice {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 0.85rem;
+  color: #aaa;
+  line-height: 1.5;
+}
+
+.bounty-display {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #f5c518;
+}
+
+.hints {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.hint-item {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 16px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+}
+
+.answer-input-wrap {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.answer-input {
+  flex: 1;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 12px;
+  color: #fff;
+  font-size: 1rem;
+  outline: none;
+}
+
+.answer-input:focus {
+  border-color: #f5c518;
+}
+
+.notice {
+  font-size: 0.75rem;
+  color: #555;
+}
+
+.btn-primary {
+  padding: 14px 28px;
+  background: #f5c518;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+}
+
+.btn-ghost {
+  padding: 10px;
+  background: transparent;
+  color: #555;
+  border: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.result-icon {
+  font-size: 4rem;
+}
+
+.result-points {
+  font-size: 1.5rem;
+  color: #f5c518;
+  font-weight: 700;
+}
+
+.result-sub {
+  color: #888;
+}
+
+/* 참가권 선택 */
+.ticket-desc {
+  color: #888;
+  margin: 0;
+}
+
+.ticket-card {
+  width: 100%;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 14px;
+  padding: 20px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s;
+}
+
+.ticket-card:hover {
+  border-color: #f5c518;
+}
+
+.ticket-card.used {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.ticket-card.paid {
+  border-color: #f5c518;
+}
+
+.ticket-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.used-badge {
+  font-size: 0.7rem;
+  background: #333;
+  color: #888;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 400;
+}
+
+.ticket-benefits {
+  margin: 0 0 14px 0;
+  padding-left: 16px;
+  color: #aaa;
+  font-size: 0.85rem;
+  line-height: 1.8;
+}
+
+.ticket-action {
+  font-size: 0.85rem;
+  color: #f5c518;
+  font-weight: 600;
+}
+
+.ticket-card.used .ticket-action {
+  color: #555;
+}
+
+.ticket-notice {
+  font-size: 0.8rem;
+  color: #555;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.archive-badge {
+  font-size: 0.8rem;
+  color: #555;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.archive-answer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 16px 24px;
+  width: 100%;
+}
+
+.archive-answer-label {
+  font-size: 0.75rem;
+  color: #555;
+}
+
+.archive-answer-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #f5c518;
+}
+
+.ticket-type-badge {
+  font-size: 0.75rem;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  color: #888;
+  padding: 4px 12px;
+  border-radius: 20px;
+}

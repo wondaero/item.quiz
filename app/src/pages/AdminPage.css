@@ -1,0 +1,291 @@
+.admin-page {
+  min-height: 100vh;
+  background: #0f0f0f;
+  color: #fff;
+  padding: 20px;
+}
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.admin-header h2 {
+  margin: 0;
+  color: #f5c518;
+}
+
+.back-btn {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+.tab-bar {
+  display: flex;
+  gap: 0;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.tab-bar button {
+  padding: 10px 20px;
+  background: transparent;
+  color: #888;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.tab-bar button.active {
+  color: #f5c518;
+  border-bottom-color: #f5c518;
+}
+
+.create-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.create-tab section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.create-tab label {
+  font-size: 0.85rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.hint-row {
+  display: flex;
+  gap: 8px;
+}
+
+.hint-row input, .answer-field {
+  flex: 1;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #fff;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.hint-row input:focus, .answer-field:focus {
+  border-color: #f5c518;
+}
+
+.remove-btn {
+  background: #2a2a2a;
+  border: none;
+  color: #888;
+  border-radius: 6px;
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.add-hint-btn {
+  background: transparent;
+  border: 1px dashed #333;
+  color: #888;
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.bounty-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bounty-opt {
+  padding: 8px 16px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 20px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.bounty-opt.selected {
+  background: #f5c518;
+  color: #000;
+  border-color: #f5c518;
+  font-weight: 700;
+}
+
+.submit-btn {
+  padding: 16px;
+  background: #f5c518;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.submit-btn:disabled {
+  opacity: 0.5;
+}
+
+.quizzes-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-quiz-card {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.admin-quiz-card.solved {
+  opacity: 0.4;
+}
+
+.admin-hints {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.admin-hints span {
+  background: #2a2a2a;
+  border-radius: 16px;
+  padding: 3px 10px;
+  font-size: 0.9rem;
+}
+
+.admin-quiz-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 0.8rem;
+  color: #888;
+  flex-wrap: wrap;
+}
+
+.solved-tag {
+  color: #555;
+  background: #2a2a2a;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+/* 모드 토글 */
+.mode-toggle {
+  display: flex;
+  background: #1a1a1a;
+  border-radius: 8px;
+  padding: 4px;
+  gap: 4px;
+  width: fit-content;
+}
+
+.mode-btn {
+  padding: 6px 20px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #888;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.mode-btn.active {
+  background: #f5c518;
+  color: #000;
+  font-weight: 700;
+}
+
+.label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hints-textarea {
+  width: 100%;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #fff;
+  font-size: 0.95rem;
+  outline: none;
+  resize: vertical;
+  line-height: 1.7;
+  box-sizing: border-box;
+}
+
+.hints-textarea.monospace {
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+
+.hints-textarea:focus {
+  border-color: #f5c518;
+}
+
+.preview-btn {
+  background: #2a2a2a;
+  border: none;
+  color: #aaa;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.html-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.html-preview {
+  background: #111;
+  border: 1px dashed #333;
+  border-radius: 8px;
+  padding: 14px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #fff;
+}
+
+.preview-empty {
+  color: #555;
+  font-size: 0.85rem;
+}
+
+.custom-bounty-preview {
+  font-size: 0.85rem;
+  color: #f5c518;
+  margin: 0;
+}
+
+.html-badge {
+  font-size: 0.7rem;
+  background: #2a2a2a;
+  color: #f5c518;
+  padding: 1px 6px;
+  border-radius: 4px;
+}

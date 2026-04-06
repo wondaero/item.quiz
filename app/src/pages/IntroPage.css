@@ -1,0 +1,63 @@
+.intro-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  gap: 48px;
+  background: #0f0f0f;
+  color: #fff;
+}
+
+.intro-logo h1 {
+  font-size: 3rem;
+  font-weight: 900;
+  letter-spacing: 4px;
+  text-align: center;
+  color: #f5c518;
+  margin: 0;
+}
+
+.intro-logo p {
+  text-align: center;
+  color: #888;
+  margin-top: 8px;
+  font-size: 0.9rem;
+}
+
+.intro-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 240px;
+}
+
+.btn-primary {
+  padding: 14px;
+  background: #f5c518;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-secondary {
+  padding: 14px;
+  background: transparent;
+  color: #fff;
+  border: 2px solid #333;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.btn-ghost {
+  padding: 14px;
+  background: transparent;
+  color: #555;
+  border: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
