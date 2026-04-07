@@ -37,7 +37,8 @@
 .bounty-display {
   font-size: 2rem;
   font-weight: 900;
-  color: #f5c518;
+  color: #A855F7;
+  text-shadow: 0 0 12px #A855F7, 0 0 24px #7C3AED;
 }
 
 .hints {
@@ -75,7 +76,7 @@
 }
 
 .answer-input:focus {
-  border-color: #f5c518;
+  border-color: #A855F7;
 }
 
 .notice {
@@ -85,7 +86,7 @@
 
 .btn-primary {
   padding: 14px 28px;
-  background: #f5c518;
+  background: #A855F7;
   color: #000;
   border: none;
   border-radius: 8px;
@@ -93,6 +94,7 @@
   font-weight: 700;
   cursor: pointer;
   width: 100%;
+  box-shadow: 0 0 12px #A855F7;
 }
 
 .btn-ghost {
@@ -110,7 +112,7 @@
 
 .result-points {
   font-size: 1.5rem;
-  color: #f5c518;
+  color: #A855F7;
   font-weight: 700;
 }
 
@@ -136,7 +138,7 @@
 }
 
 .ticket-card:hover {
-  border-color: #f5c518;
+  border-color: #A855F7;
 }
 
 .ticket-card.used {
@@ -145,7 +147,7 @@
 }
 
 .ticket-card.paid {
-  border-color: #f5c518;
+  border-color: #A855F7;
 }
 
 .ticket-title {
@@ -176,7 +178,7 @@
 
 .ticket-action {
   font-size: 0.85rem;
-  color: #f5c518;
+  color: #A855F7;
   font-weight: 600;
 }
 
@@ -220,7 +222,7 @@
 .archive-answer-value {
   font-size: 1.4rem;
   font-weight: 700;
-  color: #f5c518;
+  color: #A855F7;
 }
 
 .ticket-type-badge {

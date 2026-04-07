@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
+import { CURRENCY } from '../constants'
 import './MyPage.css'
 
 export default function MyPage() {
@@ -11,7 +12,7 @@ export default function MyPage() {
   const [userData, setUserData] = useState(null)
 
   useEffect(() => {
-    if (!user) return
+    if (!user || !db) return
     const fetchUser = async () => {
       const snap = await getDoc(doc(db, 'users', user.uid))
       if (snap.exists()) setUserData(snap.data())
@@ -35,14 +36,14 @@ export default function MyPage() {
       </header>
 
       <div className="my-profile">
-        <div className="avatar">{user?.displayName?.[0] ?? '?'}</div>
-        <p className="username">{user?.displayName ?? '유저'}</p>
+        <div className="avatar">{user?.nickname?.[0] ?? '?'}</div>
+        <p className="username">{user?.nickname ?? '유저'}</p>
       </div>
 
       <div className="my-stats">
         <div className="stat-card">
           <span className="stat-value">{userData?.points ?? 0}</span>
-          <span className="stat-label">보유 포인트</span>
+          <span className="stat-label">보유 {CURRENCY}</span>
         </div>
         <div className="stat-card">
           <span className="stat-value">{userData?.attempts ?? 0}</span>

@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '../store/useAuthStore'
+import { APP_NAME } from '../constants'
 import './IntroPage.css'
 
 export default function IntroPage() {
@@ -17,7 +18,7 @@ export default function IntroPage() {
   return (
     <div className="intro-page">
       <div className="intro-logo">
-        <h1>ITEM QUIZ</h1>
+        <h1>{APP_NAME}</h1>
         <p>단어를 연결해 정답을 찾아라</p>
       </div>
       <div className="intro-buttons">

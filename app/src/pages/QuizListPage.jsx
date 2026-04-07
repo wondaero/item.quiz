@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { collection, getDocs, orderBy, query } from 'firebase/firestore'
-import { db } from '../firebase/config'
 import './QuizListPage.css'
+import { CURRENCY } from '../constants'
 
 export default function QuizListPage() {
   const [quizzes, setQuizzes] = useState([])
@@ -15,7 +14,7 @@ export default function QuizListPage() {
       { id: '1', hints: ['고라니', '모음', '비'], isHtml: false, bounty: 1043, challengers: 43, solvedBy: null },
       { id: '2', hints: ['사과', '빨강', '하루'], isHtml: false, bounty: 512, challengers: 12, solvedBy: null },
       { id: '3', hints: ['달', '토끼', '방아'], isHtml: false, bounty: 2000, challengers: 0, solvedBy: null },
-      { id: '4', hints: ['<b style="color:#f5c518">눈</b>', '겨울', '하얀'], isHtml: true, bounty: 3077, challengers: 77, solvedBy: null },
+      { id: '4', hints: ['<b style="color:#A855F7">눈</b>', '겨울', '하얀'], isHtml: true, bounty: 3077, challengers: 77, solvedBy: null },
       { id: '5', hints: ['종료된', '문제', '예시'], isHtml: false, bounty: 5000, challengers: 200, solvedBy: 'some-uid' },
     ]
     setQuizzes(MOCK_QUIZZES)
@@ -61,8 +60,8 @@ function QuizCard({ quiz, onClick }) {
   const isSolved = quiz.solvedBy != null
 
   return (
-    <div className={`quiz-card ${isSolved ? 'solved' : ''}`} onClick={isSolved ? undefined : onClick}>
-      <div className="quiz-card-bounty">💰 {quiz.bounty.toLocaleString()}P</div>
+    <div className={`quiz-card ${isSolved ? 'solved' : ''}`} onClick={onClick}>
+      <div className="quiz-card-bounty">{quiz.bounty.toLocaleString()} {CURRENCY}</div>
       <div className="quiz-card-hint-count">힌트 {quiz.hints.length}개</div>
       {isSolved && <span className="solved-badge">종료</span>}
     </div>

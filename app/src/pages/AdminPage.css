@@ -14,7 +14,7 @@
 
 .admin-header h2 {
   margin: 0;
-  color: #f5c518;
+  color: #A855F7;
 }
 
 .back-btn {
@@ -44,8 +44,8 @@
 }
 
 .tab-bar button.active {
-  color: #f5c518;
-  border-bottom-color: #f5c518;
+  color: #A855F7;
+  border-bottom-color: #A855F7;
 }
 
 .create-tab {
@@ -84,7 +84,7 @@
 }
 
 .hint-row input:focus, .answer-field:focus {
-  border-color: #f5c518;
+  border-color: #A855F7;
 }
 
 .remove-btn {
@@ -123,15 +123,15 @@
 }
 
 .bounty-opt.selected {
-  background: #f5c518;
+  background: #A855F7;
   color: #000;
-  border-color: #f5c518;
+  border-color: #A855F7;
   font-weight: 700;
 }
 
 .submit-btn {
   padding: 16px;
-  background: #f5c518;
+  background: #A855F7;
   color: #000;
   border: none;
   border-radius: 8px;
@@ -211,7 +211,7 @@
 }
 
 .mode-btn.active {
-  background: #f5c518;
+  background: #A855F7;
   color: #000;
   font-weight: 700;
 }
@@ -242,7 +242,7 @@
 }
 
 .hints-textarea:focus {
-  border-color: #f5c518;
+  border-color: #A855F7;
 }
 
 .preview-btn {
@@ -278,14 +278,153 @@
 
 .custom-bounty-preview {
   font-size: 0.85rem;
-  color: #f5c518;
+  color: #A855F7;
   margin: 0;
+}
+
+/* 문상 관리 */
+.gift-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.gift-tab section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gift-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.gift-amount {
+  width: 100px;
+  flex: none;
+}
+
+.gift-add-btn {
+  background: #A855F7;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  padding: 0 16px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 0 8px #A855F7;
+}
+
+.gift-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gift-item {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.gift-item.used {
+  opacity: 0.45;
+}
+
+.gift-code {
+  flex: 1;
+  font-size: 0.85rem;
+  font-family: monospace;
+  color: #ccc;
+}
+
+.gift-amount-tag {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #A855F7;
+}
+
+.gift-date {
+  font-size: 0.75rem;
+  color: #555;
+}
+
+.gift-status.available {
+  font-size: 0.75rem;
+  color: #A855F7;
+}
+
+.gift-status.used {
+  font-size: 0.75rem;
+  color: #555;
+}
+
+.gift-issue-btn {
+  background: #A855F7;
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tab-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.add-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #A855F7;
+  color: #000;
+  border: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px #A855F7;
+}
+
+.back-form-btn {
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 20px;
+  display: block;
+}
+
+.empty-msg {
+  color: #555;
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 20px 0;
 }
 
 .html-badge {
   font-size: 0.7rem;
   background: #2a2a2a;
-  color: #f5c518;
+  color: #A855F7;
   padding: 1px 6px;
   border-radius: 4px;
 }

@@ -36,7 +36,7 @@
 .avatar {
   width: 72px;
   height: 72px;
-  background: #f5c518;
+  background: #A855F7;
   color: #000;
   border-radius: 50%;
   display: flex;
@@ -71,7 +71,7 @@
 .stat-value {
   font-size: 1.8rem;
   font-weight: 900;
-  color: #f5c518;
+  color: #A855F7;
 }
 
 .stat-label {
@@ -97,8 +97,8 @@
 }
 
 .action-btn.admin {
-  border-color: #f5c518;
-  color: #f5c518;
+  border-color: #A855F7;
+  color: #A855F7;
 }
 
 .action-btn.logout {
@@ -107,7 +107,7 @@
 }
 
 .ticket-card-stat.available {
-  border: 1px solid #f5c518;
+  border: 1px solid #A855F7;
 }
 
 .ticket-icon {

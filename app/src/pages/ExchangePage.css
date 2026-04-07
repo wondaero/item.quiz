@@ -48,7 +48,7 @@
 .points-value {
   font-size: 1.5rem;
   font-weight: 900;
-  color: #f5c518;
+  color: #A855F7;
 }
 
 .exchange-notice {
@@ -91,19 +91,42 @@
 
 .exchange-preview {
   text-align: center;
-  color: #f5c518;
+  color: #A855F7;
   font-weight: 700;
 }
 
 .btn-primary {
   padding: 16px;
-  background: #f5c518;
+  background: #A855F7;
   color: #000;
   border: none;
   border-radius: 8px;
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
+}
+
+.amount-options {
+  display: flex;
+  gap: 8px;
+}
+
+.amount-opt {
+  flex: 1;
+  padding: 12px 0;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.amount-opt.selected {
+  background: #A855F7;
+  border-color: #A855F7;
+  color: #000;
+  font-weight: 700;
 }
 
 .exchange-success {

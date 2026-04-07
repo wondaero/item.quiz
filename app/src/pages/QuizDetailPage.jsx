@@ -4,6 +4,7 @@ import { doc, updateDoc, increment, arrayUnion, Timestamp, onSnapshot } from 'fi
 import { db } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
 import './QuizDetailPage.css'
+import { CURRENCY, DEV_ACCESS } from '../constants'
 
 function getTodayString() {
   return new Date().toISOString().slice(0, 10) // 'YYYY-MM-DD'
@@ -29,7 +30,7 @@ export default function QuizDetailPage() {
       '1': { id: '1', hints: ['고라니', '모음', '비'], isHtml: false, bounty: 1043, challengers: 43, solvedBy: null, answers: ['소나기'] },
       '2': { id: '2', hints: ['사과', '빨강', '하루'], isHtml: false, bounty: 512, challengers: 12, solvedBy: null, answers: ['백설공주'] },
       '3': { id: '3', hints: ['달', '토끼', '방아'], isHtml: false, bounty: 2000, challengers: 0, solvedBy: null, answers: ['떡'] },
-      '4': { id: '4', hints: ['<b style="color:#f5c518">눈</b>', '겨울', '하얀'], isHtml: true, bounty: 3077, challengers: 77, solvedBy: null, answers: ['눈사람', '눈 사람'] },
+      '4': { id: '4', hints: ['<b style="color:#A855F7">눈</b>', '겨울', '하얀'], isHtml: true, bounty: 3077, challengers: 77, solvedBy: null, answers: ['눈사람', '눈 사람'] },
       '5': { id: '5', hints: ['고라니', '모음', '비'], isHtml: false, bounty: 1043, challengers: 99, solvedBy: 'other-uid', answers: ['소나기'] },
     }
     setQuiz(MOCK_QUIZZES[id] ?? null)
@@ -50,7 +51,7 @@ export default function QuizDetailPage() {
 
   // play 단계 진입 시 실시간 리스너 - 다른 사람이 먼저 맞추면 강제 아웃
   useEffect(() => {
-    if (phase !== 'play') return
+    if (phase !== 'play' || !db) return
 
     const unsub = onSnapshot(doc(db, 'quizzes', id), async (snap) => {
       const data = snap.data()
@@ -69,7 +70,7 @@ export default function QuizDetailPage() {
   }, [phase, id, user.uid, ticketType])
 
   const isSolved = quiz?.solvedBy != null
-  const hasFreeTicketToday = userData?.freeTicketLastUsed !== getTodayString()
+  const hasFreeTicketToday = (DEV_ACCESS.전체접근 || DEV_ACCESS.무료참가권쿨타임) || userData?.freeTicketLastUsed !== getTodayString()
 
   // 종료된 문제는 바로 열람 모드로
   useEffect(() => {
@@ -80,13 +81,16 @@ export default function QuizDetailPage() {
 
   const handleSelectPaid = () => {
     setTicketType('paid')
-    setPhase('ad')
+    if (DEV_ACCESS.전체접근 || DEV_ACCESS.광고) {
+      setLockedBounty(quiz.bounty)
+      setPhase('play')
+    } else {
+      setPhase('ad')
+    }
   }
 
   const handleSelectFree = async () => {
-    await updateDoc(doc(db, 'users', user.uid), {
-      freeTicketLastUsed: getTodayString(),
-    })
+    if (db) await updateDoc(doc(db, 'users', user.uid), { freeTicketLastUsed: getTodayString() })
     setLockedBounty(quiz.bounty)
     setTicketType('free')
     setPhase('play')
@@ -104,48 +108,30 @@ export default function QuizDetailPage() {
     const normalize = (s) => s.replace(/\s/g, '')
     const acceptedAnswers = quiz.answers ?? [quiz.answer] // 구버전 호환
     const isCorrect = acceptedAnswers.some((a) => normalize(a) === normalize(answer))
-    const quizRef = doc(db, 'quizzes', id)
-    const userRef = doc(db, 'users', user.uid)
 
-    if (isCorrect) {
-      await Promise.all([
-        updateDoc(quizRef, {
-          solvedBy: user.uid,
-          solvedAt: Timestamp.now(),
-        }),
-        updateDoc(userRef, {
-          points: increment(lockedBounty),
-        }),
-      ])
-      setResult('correct')
-    } else {
-      if (ticketType === 'paid') {
-        // 광고 참가권 오답: 현상금 +1, 1P 환불
+    if (db) {
+      const quizRef = doc(db, 'quizzes', id)
+      const userRef = doc(db, 'users', user.uid)
+
+      if (isCorrect) {
         await Promise.all([
-          updateDoc(quizRef, {
-            bounty: increment(1),
-            challengers: increment(1),
-            wrongAnswers: arrayUnion(user.uid),
-          }),
-          updateDoc(userRef, {
-            points: increment(1),
-            attempts: increment(1),
-          }),
+          updateDoc(quizRef, { solvedBy: user.uid, solvedAt: Timestamp.now() }),
+          updateDoc(userRef, { points: increment(lockedBounty) }),
+        ])
+      } else if (ticketType === 'paid') {
+        await Promise.all([
+          updateDoc(quizRef, { bounty: increment(1), challengers: increment(1), wrongAnswers: arrayUnion(user.uid) }),
+          updateDoc(userRef, { points: increment(1), attempts: increment(1) }),
         ])
       } else {
-        // 무료 참가권 오답: 현상금 기여 없음, 환불 없음
         await Promise.all([
-          updateDoc(quizRef, {
-            challengers: increment(1),
-          }),
-          updateDoc(userRef, {
-            attempts: increment(1),
-          }),
+          updateDoc(quizRef, { challengers: increment(1) }),
+          updateDoc(userRef, { attempts: increment(1) }),
         ])
       }
-      setResult('wrong')
     }
 
+    setResult(isCorrect ? 'correct' : 'wrong')
     setPhase('result')
   }
 
@@ -164,7 +150,7 @@ export default function QuizDetailPage() {
             <div className="ticket-title">광고 참가권</div>
             <ul className="ticket-benefits">
               <li>현상금 누적에 기여 (+1P)</li>
-              <li>틀려도 1P 환불</li>
+              <li>틀려도 1 {CURRENCY} 환불</li>
               <li>맞추면 현상금 전액 획득</li>
             </ul>
             <div className="ticket-action">광고 보고 도전</div>
@@ -204,7 +190,7 @@ export default function QuizDetailPage() {
 
       {phase === 'play' && (
         <div className="play-phase">
-          <div className="bounty-display">💰 {lockedBounty}P</div>
+          <div className="bounty-display">{lockedBounty.toLocaleString()} {CURRENCY}</div>
           <div className="ticket-type-badge">{ticketType === 'paid' ? '광고 참가권' : '무료 참가권'}</div>
           <div className="hints">
             {quiz.hints.map((hint, i) => (
@@ -237,14 +223,14 @@ export default function QuizDetailPage() {
             <>
               <div className="result-icon">🎉</div>
               <h2>정답!</h2>
-              <p className="result-points">+{lockedBounty}P 획득</p>
+              <p className="result-points">+{lockedBounty.toLocaleString()} {CURRENCY} 획득</p>
             </>
           ) : (
             <>
               <div className="result-icon">❌</div>
               <h2>오답</h2>
               {ticketType === 'paid'
-                ? <p className="result-sub">현상금이 1P 올랐어요 · 1P 환불</p>
+                ? <p className="result-sub">현상금이 1 {CURRENCY} 올랐어요 · 1 {CURRENCY} 환불</p>
                 : <p className="result-sub">현상금 변동 없음</p>
               }
               <button className="btn-primary" onClick={() => {
