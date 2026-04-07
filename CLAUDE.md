@@ -123,7 +123,8 @@ app/                          # React 앱 (Vite)
 - **신규 첫 정답 보너스**: 가입 후 7일 내 첫 정답 달성 시 500 QW 추가 (친구에게)
 - **추천인 보너스**: 추천받은 친구가 7일 내 첫 정답 달성 시 추천인에게 500 QW 지급
 - 추천인 보상은 친구가 문제를 맞춰야만 지급 → 어뷰징 방지
-- 수치 변경: `constants.js`의 SIGNUP_REWARD / NEWBIE_FIRST_SOLVE / REFERRAL_REWARD / NEWBIE_PERIOD_DAYS
+- **추천인 영구 수익 쉐어**: 추천받은 유저가 현상금 획득할 때마다 1% 추천인에게 별도 지급 (획득자 현상금은 그대로 유지, 운영에서 추가 지급)
+- 수치 변경: `constants.js`의 SIGNUP_REWARD / NEWBIE_FIRST_SOLVE / REFERRAL_REWARD / NEWBIE_PERIOD_DAYS / REFERRAL_SHARE_RATE
 
 ---
 
