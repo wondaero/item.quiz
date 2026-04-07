@@ -56,11 +56,10 @@ export default function QuizDetailPage() {
     const unsub = onSnapshot(doc(db, 'quizzes', id), async (snap) => {
       const data = snap.data()
       if (data?.solvedBy && data.solvedBy !== user.uid) {
-        // 무료 참가권이면 오늘 사용 기록 복구
-        if (ticketType === 'free') {
-          await updateDoc(doc(db, 'users', user.uid), {
-            freeTicketLastUsed: null,
-          })
+        if (db) {
+          const updates = [updateDoc(doc(db, 'quizzes', id), { activePlayers: increment(-1) })]
+          if (ticketType === 'free') updates.push(updateDoc(doc(db, 'users', user.uid), { freeTicketLastUsed: null }))
+          await Promise.all(updates)
         }
         setPhase('kicked')
       }
@@ -79,9 +78,10 @@ export default function QuizDetailPage() {
     }
   }, [quiz, isSolved, phase])
 
-  const handleSelectPaid = () => {
+  const handleSelectPaid = async () => {
     setTicketType('paid')
     if (DEV_ACCESS.전체접근 || DEV_ACCESS.광고) {
+      if (db) await updateDoc(doc(db, 'quizzes', id), { activePlayers: increment(1) })
       setLockedBounty(quiz.bounty)
       setPhase('play')
     } else {
@@ -90,14 +90,18 @@ export default function QuizDetailPage() {
   }
 
   const handleSelectFree = async () => {
-    if (db) await updateDoc(doc(db, 'users', user.uid), { freeTicketLastUsed: getTodayString() })
+    if (db) await Promise.all([
+      updateDoc(doc(db, 'users', user.uid), { freeTicketLastUsed: getTodayString() }),
+      updateDoc(doc(db, 'quizzes', id), { activePlayers: increment(1) }),
+    ])
     setLockedBounty(quiz.bounty)
     setTicketType('free')
     setPhase('play')
   }
 
-  const handleAdWatched = () => {
+  const handleAdWatched = async () => {
     // TODO: 실제 AdMob 광고 시청 완료 후 호출
+    if (db) await updateDoc(doc(db, 'quizzes', id), { activePlayers: increment(1) })
     setLockedBounty(quiz.bounty)
     setPhase('play')
   }
@@ -115,17 +119,17 @@ export default function QuizDetailPage() {
 
       if (isCorrect) {
         await Promise.all([
-          updateDoc(quizRef, { solvedBy: user.uid, solvedAt: Timestamp.now() }),
+          updateDoc(quizRef, { solvedBy: user.uid, solvedAt: Timestamp.now(), activePlayers: increment(-1) }),
           updateDoc(userRef, { points: increment(lockedBounty) }),
         ])
       } else if (ticketType === 'paid') {
         await Promise.all([
-          updateDoc(quizRef, { bounty: increment(1), challengers: increment(1), wrongAnswers: arrayUnion(user.uid) }),
+          updateDoc(quizRef, { bounty: increment(1), challengers: increment(1), wrongAnswers: arrayUnion(user.uid), activePlayers: increment(-1) }),
           updateDoc(userRef, { points: increment(1), attempts: increment(1) }),
         ])
       } else {
         await Promise.all([
-          updateDoc(quizRef, { challengers: increment(1) }),
+          updateDoc(quizRef, { challengers: increment(1), activePlayers: increment(-1) }),
           updateDoc(userRef, { attempts: increment(1) }),
         ])
       }

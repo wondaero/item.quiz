@@ -19,12 +19,28 @@
 
 .my-info-btn {
   background: transparent;
-  color: #A855F7;
-  border: 1px solid #A855F7;
+  color: var(--primary);
+  border: 1px solid var(--primary);
   border-radius: 6px;
   padding: 6px 14px;
   cursor: pointer;
   font-size: 0.9rem;
+}
+
+.sort-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.sort-btn {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  color: #aaa;
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  cursor: pointer;
 }
 
 .quiz-grid {
@@ -50,7 +66,7 @@
 }
 
 .quiz-card:hover {
-  border-color: #A855F7;
+  border-color: var(--primary);
 }
 
 .quiz-card.solved {
@@ -61,21 +77,37 @@
 .quiz-card-bounty {
   font-size: 1.1rem;
   font-weight: 900;
-  color: #A855F7;
-  text-shadow: 0 0 8px #A855F7;
+  color: var(--primary);
+  text-shadow: 0 0 8px var(--primary);
 }
 
-.quiz-card-hint-count {
-  font-size: 0.75rem;
+.quiz-card-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.tag {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 20px;
+}
+
+.tag-new {
+  background: var(--primary);
+  color: #000;
+}
+
+.tag-challenger {
+  background: #2a2a2a;
+  color: #aaa;
+}
+
+.tag-solved {
+  background: #222;
   color: #555;
-}
-
-.solved-badge {
-  font-size: 0.7rem;
-  background: #333;
-  padding: 2px 8px;
-  border-radius: 4px;
-  color: #666;
 }
 
 .loading, .empty {

@@ -14,7 +14,7 @@
   font-weight: 900;
   letter-spacing: 4px;
   text-align: center;
-  color: #A855F7;
+  color: var(--primary);
   margin: 0;
 }
 
@@ -34,7 +34,7 @@
 
 .btn-primary {
   padding: 14px;
-  background: #A855F7;
+  background: var(--primary);
   color: #000;
   border: none;
   border-radius: 8px;

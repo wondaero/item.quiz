@@ -48,7 +48,7 @@
 .points-value {
   font-size: 1.5rem;
   font-weight: 900;
-  color: #A855F7;
+  color: var(--primary);
 }
 
 .exchange-notice {
@@ -91,13 +91,13 @@
 
 .exchange-preview {
   text-align: center;
-  color: #A855F7;
+  color: var(--primary);
   font-weight: 700;
 }
 
 .btn-primary {
   padding: 16px;
-  background: #A855F7;
+  background: var(--primary);
   color: #000;
   border: none;
   border-radius: 8px;
@@ -123,8 +123,8 @@
 }
 
 .amount-opt.selected {
-  background: #A855F7;
-  border-color: #A855F7;
+  background: var(--primary);
+  border-color: var(--primary);
   color: #000;
   font-weight: 700;
 }
