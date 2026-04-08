@@ -1,0 +1,83 @@
+rules_version = '2';
+// ⚠️ 카카오 로그인만 사용 중 (Firebase Auth 미연동)
+// request.auth가 항상 null이므로 현재는 데이터 구조 검증 위주 규칙
+// Cloud Functions 추가 후 강화 예정
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 퀴즈 - 누구나 읽기, 쓰기는 필드 범위만 제한
+    match /quizzes/{quizId} {
+      allow read: if true;
+
+      // 생성은 관리자만 (Cloud Functions 연동 전까지 콘솔에서 직접)
+      allow create: if false;
+
+      // 업데이트: 허용 필드만 변경 가능
+      allow update: if onlyUpdatingFields(['bounty', 'challengers', 'wrongAnswers',
+                                           'solvedBy', 'solvedAt', 'activePlayers'])
+                    && incomingBounty()
+                    && incomingActivePlayers();
+
+      // 삭제 불가
+      allow delete: if false;
+    }
+
+    // 유저 문서 - 누구나 읽기/쓰기 (Firebase Auth 미연동으로 인한 임시)
+    // TODO: Custom Token 연동 후 request.auth.uid == userId 조건 추가
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if validUserCreate();
+      allow update: if validUserUpdate();
+      allow delete: if false;
+    }
+
+    // 환전 신청
+    match /exchanges/{exchangeId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll(['uid', 'amount', 'status', 'requestedAt'])
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.amount >= 20000;
+      allow update: if false; // 상태 변경은 콘솔에서 직접
+      allow delete: if false;
+    }
+
+    // 관리자 알림
+    match /adminAlerts/{alertId} {
+      allow create: if true;
+      allow read, update, delete: if false; // 콘솔에서 직접 확인
+    }
+
+    // --- 헬퍼 함수 ---
+
+    function onlyUpdatingFields(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+    }
+
+    function incomingBounty() {
+      return !('bounty' in request.resource.data)
+        || request.resource.data.bounty is int
+        || request.resource.data.bounty == resource.data.bounty + 1;
+    }
+
+    function incomingActivePlayers() {
+      return !('activePlayers' in request.resource.data)
+        || request.resource.data.activePlayers is int;
+    }
+
+    function validUserCreate() {
+      let d = request.resource.data;
+      return d.keys().hasAll(['points', 'attempts', 'joinedAt', 'newbieBonusClaimed'])
+        && d.points is int
+        && d.points >= 0
+        && d.attempts == 0
+        && d.newbieBonusClaimed == false;
+    }
+
+    function validUserUpdate() {
+      let d = request.resource.data;
+      return (!('points' in d) || d.points is int)
+        && (!('attempts' in d) || d.attempts is int);
+    }
+  }
+}
