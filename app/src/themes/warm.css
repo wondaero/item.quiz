@@ -1,0 +1,30 @@
+:root {
+  --bg: #FFFBF0;
+  --bg-card: #FFFFFF;
+  --bg-card-2: #FFF3CC;
+  --border: #FFE08A;
+  --border-2: #FFD43B;
+  --text: #3D2B00;
+  --text-sub: #8B6914;
+  --text-muted: #C9A84C;
+  --btn-text: #3D2B00;
+  --primary: #FFD43B;
+  --primary-dark: #FF922B;
+}
+
+/* warm 테마 전용 추가 스타일 */
+.quiz-card,
+.stat-card,
+.admin-quiz-card,
+.dash-card,
+.dash-stock-item,
+.dash-pending,
+.dash-recommend-item.ok,
+.ticket-card,
+.hint-item,
+.archive-answer,
+.points-display,
+.exchange-notice,
+.gift-item {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}

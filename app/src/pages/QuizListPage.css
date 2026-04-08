@@ -1,7 +1,7 @@
 .quiz-list-page {
   min-height: 100vh;
-  background: #0f0f0f;
-  color: #fff;
+  background: var(--bg);
+  color: var(--text);
   padding: 20px;
 }
 
@@ -34,10 +34,10 @@
 }
 
 .sort-btn {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 6px;
-  color: #aaa;
+  color: var(--text-sub);
   font-size: 0.8rem;
   padding: 6px 12px;
   cursor: pointer;
@@ -50,8 +50,8 @@
 }
 
 .quiz-card {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 14px 10px;
   cursor: pointer;
@@ -97,21 +97,21 @@
 
 .tag-new {
   background: var(--primary);
-  color: #000;
+  color: var(--btn-text);
 }
 
 .tag-challenger {
-  background: #2a2a2a;
-  color: #aaa;
+  background: var(--bg-card-2);
+  color: var(--text-sub);
 }
 
 .tag-solved {
-  background: #222;
-  color: #555;
+  background: var(--bg-card-2);
+  color: var(--text-muted);
 }
 
 .loading, .empty {
   text-align: center;
-  color: #555;
+  color: var(--text-muted);
   margin-top: 60px;
 }

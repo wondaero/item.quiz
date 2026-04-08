@@ -1,7 +1,7 @@
 .my-page {
   min-height: 100vh;
-  background: #0f0f0f;
-  color: #fff;
+  background: var(--bg);
+  color: var(--text);
   padding: 20px;
 }
 
@@ -15,7 +15,7 @@
 .back-btn {
   background: transparent;
   border: none;
-  color: #fff;
+  color: var(--text);
   font-size: 1.3rem;
   cursor: pointer;
 }
@@ -37,7 +37,7 @@
   width: 72px;
   height: 72px;
   background: var(--primary);
-  color: #000;
+  color: var(--btn-text);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -59,7 +59,7 @@
 }
 
 .stat-card {
-  background: #1a1a1a;
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 16px 20px;
   display: flex;
@@ -77,7 +77,7 @@
 
 .stat-label {
   font-size: 0.8rem;
-  color: #888;
+  color: var(--text-sub);
 }
 
 .my-actions {
@@ -88,9 +88,9 @@
 
 .action-btn {
   padding: 14px;
-  background: #1a1a1a;
-  color: #fff;
-  border: 1px solid #2a2a2a;
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 0.95rem;
   cursor: pointer;
@@ -103,7 +103,7 @@
 }
 
 .action-btn.logout {
-  color: #888;
+  color: var(--text-sub);
   border-color: transparent;
 }
 
@@ -117,5 +117,5 @@
 
 .ticket-status {
   font-size: 0.7rem;
-  color: #888;
+  color: var(--text-sub);
 }

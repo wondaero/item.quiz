@@ -1,7 +1,7 @@
 .admin-page {
   min-height: 100vh;
-  background: #0f0f0f;
-  color: #fff;
+  background: var(--bg);
+  color: var(--text);
   padding: 20px;
 }
 
@@ -20,7 +20,7 @@
 .back-btn {
   background: transparent;
   border: none;
-  color: #fff;
+  color: var(--text);
   font-size: 1.3rem;
   cursor: pointer;
 }
@@ -29,13 +29,13 @@
   display: flex;
   gap: 0;
   margin-bottom: 24px;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--border);
 }
 
 .tab-bar button {
   padding: 10px 20px;
   background: transparent;
-  color: #888;
+  color: var(--text-sub);
   border: none;
   cursor: pointer;
   font-size: 0.95rem;
@@ -62,7 +62,7 @@
 
 .create-tab label {
   font-size: 0.85rem;
-  color: #888;
+  color: var(--text-sub);
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -74,11 +74,11 @@
 
 .hint-row input, .answer-field {
   flex: 1;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
-  color: #fff;
+  color: var(--text);
   font-size: 0.95rem;
   outline: none;
 }
@@ -88,9 +88,9 @@
 }
 
 .remove-btn {
-  background: #2a2a2a;
+  background: var(--bg-card-2);
   border: none;
-  color: #888;
+  color: var(--text-sub);
   border-radius: 6px;
   padding: 0 12px;
   cursor: pointer;
@@ -98,8 +98,8 @@
 
 .add-hint-btn {
   background: transparent;
-  border: 1px dashed #333;
-  color: #888;
+  border: 1px dashed var(--border-2);
+  color: var(--text-sub);
   border-radius: 8px;
   padding: 10px;
   cursor: pointer;
@@ -114,17 +114,17 @@
 
 .bounty-opt {
   padding: 8px 16px;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 20px;
-  color: #fff;
+  color: var(--text);
   cursor: pointer;
   font-size: 0.9rem;
 }
 
 .bounty-opt.selected {
   background: var(--primary);
-  color: #000;
+  color: var(--btn-text);
   border-color: var(--primary);
   font-weight: 700;
 }
@@ -132,7 +132,7 @@
 .submit-btn {
   padding: 16px;
   background: var(--primary);
-  color: #000;
+  color: var(--btn-text);
   border: none;
   border-radius: 8px;
   font-size: 1rem;
@@ -151,8 +151,8 @@
 }
 
 .admin-quiz-card {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 14px;
 }
@@ -162,9 +162,9 @@
 }
 
 .edit-quiz-btn {
-  background: #2a2a2a;
+  background: var(--bg-card-2);
   border: none;
-  color: #aaa;
+  color: var(--text-sub);
   border-radius: 6px;
   padding: 2px 10px;
   font-size: 0.75rem;
@@ -174,7 +174,7 @@
 
 .scheduled-badge {
   font-size: 0.7rem;
-  background: #2a2a2a;
+  background: var(--bg-card-2);
   color: var(--primary);
   padding: 1px 6px;
   border-radius: 4px;
@@ -182,7 +182,7 @@
 
 .publish-hint {
   font-size: 0.8rem;
-  color: #555;
+  color: var(--text-muted);
   margin: 0;
 }
 
@@ -198,7 +198,7 @@
   align-items: center;
   justify-content: space-between;
   font-size: 0.85rem;
-  color: #888;
+  color: var(--text-sub);
 }
 
 .dash-grid {
@@ -208,8 +208,8 @@
 }
 
 .dash-card {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 16px;
   display: flex;
@@ -229,7 +229,7 @@
 
 .dash-label {
   font-size: 0.75rem;
-  color: #888;
+  color: var(--text-sub);
 }
 
 .dash-stock-list {
@@ -239,8 +239,8 @@
 }
 
 .dash-stock-item {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 12px 14px;
   display: flex;
@@ -259,7 +259,7 @@
 
 .dash-stock-count {
   font-size: 0.85rem;
-  color: #888;
+  color: var(--text-sub);
 }
 
 .dash-shortage {
@@ -270,12 +270,12 @@
 
 .dash-ok {
   font-size: 0.8rem;
-  color: #555;
+  color: var(--text-muted);
 }
 
 .dash-pending {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 16px;
   display: flex;
@@ -312,8 +312,8 @@
 }
 
 .dash-recommend-item.ok {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
 }
 
 .dash-recommend-amount {
@@ -336,19 +336,19 @@
 }
 
 .dash-recommend-item.ok .dash-recommend-msg {
-  color: #555;
+  color: var(--text-muted);
 }
 
 .dash-recommend-detail {
   font-size: 0.75rem;
-  color: #555;
+  color: var(--text-muted);
   grid-column: 1 / -1;
   grid-row: 2;
 }
 
 .dash-all-ok {
   text-align: center;
-  color: #555;
+  color: var(--text-muted);
   font-size: 0.85rem;
   padding: 12px 0;
   margin: 0;
@@ -362,7 +362,7 @@
 }
 
 .admin-hints span {
-  background: #2a2a2a;
+  background: var(--bg-card-2);
   border-radius: 16px;
   padding: 3px 10px;
   font-size: 0.9rem;
@@ -372,13 +372,13 @@
   display: flex;
   gap: 16px;
   font-size: 0.8rem;
-  color: #888;
+  color: var(--text-sub);
   flex-wrap: wrap;
 }
 
 .solved-tag {
-  color: #555;
-  background: #2a2a2a;
+  color: var(--text-muted);
+  background: var(--bg-card-2);
   padding: 1px 6px;
   border-radius: 4px;
 }
@@ -386,7 +386,7 @@
 /* 모드 토글 */
 .mode-toggle {
   display: flex;
-  background: #1a1a1a;
+  background: var(--bg-card);
   border-radius: 8px;
   padding: 4px;
   gap: 4px;
@@ -398,14 +398,14 @@
   background: transparent;
   border: none;
   border-radius: 6px;
-  color: #888;
+  color: var(--text-sub);
   font-size: 0.9rem;
   cursor: pointer;
 }
 
 .mode-btn.active {
   background: var(--primary);
-  color: #000;
+  color: var(--btn-text);
   font-weight: 700;
 }
 
@@ -417,11 +417,11 @@
 
 .hints-textarea {
   width: 100%;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
-  color: #fff;
+  color: var(--text);
   font-size: 0.95rem;
   outline: none;
   resize: vertical;
@@ -439,9 +439,9 @@
 }
 
 .preview-btn {
-  background: #2a2a2a;
+  background: var(--bg-card-2);
   border: none;
-  color: #aaa;
+  color: var(--text-sub);
   border-radius: 6px;
   padding: 6px 12px;
   cursor: pointer;
@@ -455,17 +455,17 @@
 }
 
 .html-preview {
-  background: #111;
-  border: 1px dashed #333;
+  background: var(--bg-card-2);
+  border: 1px dashed var(--border-2);
   border-radius: 8px;
   padding: 14px;
   font-size: 0.95rem;
   line-height: 1.6;
-  color: #fff;
+  color: var(--text);
 }
 
 .preview-empty {
-  color: #555;
+  color: var(--text-muted);
   font-size: 0.85rem;
 }
 
@@ -500,7 +500,7 @@
 
 .gift-add-btn {
   background: var(--primary);
-  color: #000;
+  color: var(--btn-text);
   border: none;
   border-radius: 8px;
   padding: 0 16px;
@@ -517,8 +517,8 @@
 }
 
 .gift-item {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 12px;
   display: flex;
@@ -535,7 +535,7 @@
   flex: 1;
   font-size: 0.85rem;
   font-family: monospace;
-  color: #ccc;
+  color: var(--text-sub);
 }
 
 .gift-amount-tag {
@@ -546,7 +546,7 @@
 
 .gift-date {
   font-size: 0.75rem;
-  color: #555;
+  color: var(--text-muted);
 }
 
 .gift-status.available {
@@ -556,12 +556,12 @@
 
 .gift-status.used {
   font-size: 0.75rem;
-  color: #555;
+  color: var(--text-muted);
 }
 
 .gift-issue-btn {
   background: var(--primary);
-  color: #000;
+  color: var(--btn-text);
   border: none;
   border-radius: 6px;
   padding: 4px 12px;
@@ -576,7 +576,7 @@
   justify-content: space-between;
   margin-bottom: 16px;
   font-size: 0.85rem;
-  color: #888;
+  color: var(--text-sub);
 }
 
 .add-btn {
@@ -584,7 +584,7 @@
   height: 36px;
   border-radius: 50%;
   background: var(--primary);
-  color: #000;
+  color: var(--btn-text);
   border: none;
   font-size: 1.4rem;
   line-height: 1;
@@ -599,7 +599,7 @@
 .back-form-btn {
   background: transparent;
   border: none;
-  color: #888;
+  color: var(--text-sub);
   font-size: 0.9rem;
   cursor: pointer;
   padding: 0;
@@ -608,7 +608,7 @@
 }
 
 .empty-msg {
-  color: #555;
+  color: var(--text-muted);
   font-size: 0.85rem;
   text-align: center;
   padding: 20px 0;
@@ -616,7 +616,7 @@
 
 .html-badge {
   font-size: 0.7rem;
-  background: #2a2a2a;
+  background: var(--bg-card-2);
   color: var(--primary);
   padding: 1px 6px;
   border-radius: 4px;

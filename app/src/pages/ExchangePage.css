@@ -1,7 +1,7 @@
 .exchange-page {
   min-height: 100vh;
-  background: #0f0f0f;
-  color: #fff;
+  background: var(--bg);
+  color: var(--text);
   padding: 20px;
 }
 
@@ -20,7 +20,7 @@
 .back-btn {
   background: transparent;
   border: none;
-  color: #fff;
+  color: var(--text);
   font-size: 1.3rem;
   cursor: pointer;
 }
@@ -32,7 +32,7 @@
 }
 
 .points-display {
-  background: #1a1a1a;
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 20px;
   display: flex;
@@ -41,7 +41,7 @@
 }
 
 .points-label {
-  color: #888;
+  color: var(--text-sub);
   font-size: 0.9rem;
 }
 
@@ -52,7 +52,7 @@
 }
 
 .exchange-notice {
-  background: #1a1a1a;
+  background: var(--bg-card);
   border-radius: 10px;
   padding: 16px;
   display: flex;
@@ -63,14 +63,14 @@
 .exchange-notice p {
   margin: 0;
   font-size: 0.85rem;
-  color: #888;
+  color: var(--text-sub);
 }
 
 .input-wrap {
   display: flex;
   align-items: center;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 12px;
   gap: 8px;
@@ -80,13 +80,13 @@
   flex: 1;
   background: transparent;
   border: none;
-  color: #fff;
+  color: var(--text);
   font-size: 1rem;
   outline: none;
 }
 
 .input-unit {
-  color: #888;
+  color: var(--text-sub);
 }
 
 .exchange-preview {
@@ -98,7 +98,7 @@
 .btn-primary {
   padding: 16px;
   background: var(--primary);
-  color: #000;
+  color: var(--btn-text);
   border: none;
   border-radius: 8px;
   font-size: 1rem;
@@ -114,10 +114,10 @@
 .amount-opt {
   flex: 1;
   padding: 12px 0;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: #fff;
+  color: var(--text);
   font-size: 0.9rem;
   cursor: pointer;
 }
@@ -125,7 +125,7 @@
 .amount-opt.selected {
   background: var(--primary);
   border-color: var(--primary);
-  color: #000;
+  color: var(--btn-text);
   font-weight: 700;
 }
 
@@ -148,6 +148,6 @@
 }
 
 .exchange-success p {
-  color: #888;
+  color: var(--text-sub);
   margin: 0;
 }

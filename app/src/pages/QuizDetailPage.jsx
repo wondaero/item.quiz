@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { doc, updateDoc, increment, arrayUnion, Timestamp, onSnapshot } from 'firebase/firestore'
+import { doc, getDoc, updateDoc, increment, arrayUnion, Timestamp, onSnapshot, runTransaction } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
 import './QuizDetailPage.css'
-import { CURRENCY, DEV_ACCESS } from '../constants'
+import { CURRENCY, DEV_ACCESS, NEWBIE_FIRST_SOLVE, NEWBIE_PERIOD_DAYS, REFERRAL_REWARD, REFERRAL_SHARE_RATE } from '../constants'
 
 function getTodayString() {
   return new Date().toISOString().slice(0, 10) // 'YYYY-MM-DD'
@@ -23,30 +23,20 @@ export default function QuizDetailPage() {
   const [result, setResult] = useState(null) // 'correct' | 'wrong'
   const [lockedBounty, setLockedBounty] = useState(0) // 입장 시점 고정 현상금
   const [loading, setLoading] = useState(true)
+  const [showQuitConfirm, setShowQuitConfirm] = useState(false)
 
   useEffect(() => {
-    // TODO: 개발용 목업 - Firebase 연결 후 아래 주석 해제하고 목업 제거
-    const MOCK_QUIZZES = {
-      '1': { id: '1', hints: ['고라니', '모음', '비'], isHtml: false, bounty: 1043, challengers: 43, solvedBy: null, answers: ['소나기'] },
-      '2': { id: '2', hints: ['사과', '빨강', '하루'], isHtml: false, bounty: 512, challengers: 12, solvedBy: null, answers: ['백설공주'] },
-      '3': { id: '3', hints: ['달', '토끼', '방아'], isHtml: false, bounty: 2000, challengers: 0, solvedBy: null, answers: ['떡'] },
-      '4': { id: '4', hints: ['<b style="color:#A855F7">눈</b>', '겨울', '하얀'], isHtml: true, bounty: 3077, challengers: 77, solvedBy: null, answers: ['눈사람', '눈 사람'] },
-      '5': { id: '5', hints: ['고라니', '모음', '비'], isHtml: false, bounty: 1043, challengers: 99, solvedBy: 'other-uid', answers: ['소나기'] },
+    if (!db) return
+    const fetchData = async () => {
+      const [quizSnap, userSnap] = await Promise.all([
+        getDoc(doc(db, 'quizzes', id)),
+        getDoc(doc(db, 'users', user.uid)),
+      ])
+      if (quizSnap.exists()) setQuiz({ id: quizSnap.id, ...quizSnap.data() })
+      if (userSnap.exists()) setUserData(userSnap.data())
+      setLoading(false)
     }
-    setQuiz(MOCK_QUIZZES[id] ?? null)
-    setUserData({ points: 500, attempts: 3, freeTicketLastUsed: null })
-    setLoading(false)
-
-    // const fetchData = async () => {
-    //   const [quizSnap, userSnap] = await Promise.all([
-    //     getDoc(doc(db, 'quizzes', id)),
-    //     getDoc(doc(db, 'users', user.uid)),
-    //   ])
-    //   if (quizSnap.exists()) setQuiz({ id: quizSnap.id, ...quizSnap.data() })
-    //   if (userSnap.exists()) setUserData(userSnap.data())
-    //   setLoading(false)
-    // }
-    // fetchData()
+    fetchData()
   }, [id, user.uid])
 
   // play 단계 진입 시 실시간 리스너 - 다른 사람이 먼저 맞추면 강제 아웃
@@ -110,7 +100,7 @@ export default function QuizDetailPage() {
     if (!answer.trim()) return
 
     const normalize = (s) => s.replace(/\s/g, '')
-    const acceptedAnswers = quiz.answers ?? [quiz.answer] // 구버전 호환
+    const acceptedAnswers = quiz.answers ?? [quiz.answer]
     const isCorrect = acceptedAnswers.some((a) => normalize(a) === normalize(answer))
 
     if (db) {
@@ -118,10 +108,60 @@ export default function QuizDetailPage() {
       const userRef = doc(db, 'users', user.uid)
 
       if (isCorrect) {
-        await Promise.all([
-          updateDoc(quizRef, { solvedBy: user.uid, solvedAt: Timestamp.now(), activePlayers: increment(-1) }),
-          updateDoc(userRef, { points: increment(lockedBounty) }),
-        ])
+        try {
+          await runTransaction(db, async (transaction) => {
+            const [quizDoc, userDoc] = await Promise.all([
+              transaction.get(quizRef),
+              transaction.get(userRef),
+            ])
+
+            // 이미 다른 사람이 정답 - 동시 제출 방어
+            if (quizDoc.data()?.solvedBy) throw new Error('ALREADY_SOLVED')
+
+            const uData = userDoc.data()
+            const now = Timestamp.now()
+
+            // 신규 첫 정답 보너스 계산
+            let totalGain = lockedBounty
+            let claimNewbie = false
+            if (!uData.newbieBonusClaimed && uData.joinedAt) {
+              const daysSinceJoin = (now.toMillis() - uData.joinedAt.toMillis()) / 86400000
+              if (daysSinceJoin <= NEWBIE_PERIOD_DAYS) {
+                totalGain += NEWBIE_FIRST_SOLVE
+                claimNewbie = true
+              }
+            }
+
+            transaction.update(quizRef, {
+              solvedBy: user.uid,
+              solvedAt: now,
+              activePlayers: increment(-1),
+            })
+            transaction.update(userRef, {
+              points: increment(totalGain),
+              ...(claimNewbie && { newbieBonusClaimed: true }),
+            })
+
+            // 추천인 보상
+            if (uData.referredBy) {
+              const referrerRef = doc(db, 'users', uData.referredBy)
+              // 1% 영구 수익쉐어
+              let referrerGain = Math.floor(lockedBounty * REFERRAL_SHARE_RATE)
+              // 첫 정답 달성 시 추천인 보너스 추가
+              if (claimNewbie) referrerGain += REFERRAL_REWARD
+              if (referrerGain > 0) {
+                transaction.update(referrerRef, { points: increment(referrerGain) })
+              }
+            }
+          })
+        } catch (e) {
+          if (e.message === 'ALREADY_SOLVED') {
+            setPhase('kicked')
+            return
+          }
+          console.error('정답 처리 오류', e)
+          return
+        }
       } else if (ticketType === 'paid') {
         await Promise.all([
           updateDoc(quizRef, { bounty: increment(1), challengers: increment(1), wrongAnswers: arrayUnion(user.uid), activePlayers: increment(-1) }),
@@ -206,18 +246,35 @@ export default function QuizDetailPage() {
               </div>
             ))}
           </div>
-          <div className="answer-input-wrap">
-            <input
-              className="answer-input"
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-              placeholder="정답을 입력하세요"
-              autoFocus
-            />
-            <button className="btn-primary" onClick={handleSubmit}>제출</button>
-          </div>
-          <p className="notice">* 정답은 정확히 입력해야 합니다 (띄어쓰기 포함)</p>
+          <button className="play-back-btn" onClick={() => setShowQuitConfirm(true)}>←</button>
+          {showQuitConfirm ? (
+            <div className="quit-confirm">
+              <p>정말 포기할까요?</p>
+              <p className="notice">참가권은 환불되지 않아요</p>
+              <div className="quit-confirm-btns">
+                <button className="btn-primary" onClick={async () => {
+                  if (db) await updateDoc(doc(db, 'quizzes', id), { activePlayers: increment(-1) })
+                  navigate('/quiz')
+                }}>포기</button>
+                <button className="btn-ghost" onClick={() => setShowQuitConfirm(false)}>계속 도전</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="answer-input-wrap">
+                <input
+                  className="answer-input"
+                  value={answer}
+                  onChange={(e) => setAnswer(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+                  placeholder="정답을 입력하세요"
+                  autoFocus
+                />
+                <button className="btn-primary" onClick={handleSubmit}>제출</button>
+              </div>
+              <p className="notice">* 정답은 정확히 입력해야 합니다 (띄어쓰기 포함)</p>
+            </>
+          )}
         </div>
       )}
 
