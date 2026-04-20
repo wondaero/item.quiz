@@ -5,16 +5,14 @@
   align-items: center;
   height: 100vh;
   gap: 48px;
-  background: var(--bg);
+  background: var(--bg) center/cover no-repeat;
   color: var(--text);
 }
 
-.intro-logo h1 {
-  font-size: 3rem;
-  font-weight: 900;
-  letter-spacing: 4px;
+.intro-logo {
   text-align: center;
-  color: var(--primary);
+}
+.intro-logo h1 {
   margin: 0;
 }
 
@@ -23,6 +21,11 @@
   color: var(--text-sub);
   margin-top: 8px;
   font-size: 0.9rem;
+}
+
+.intro-logo-img{
+  width: 80%;
+  vertical-align: top;
 }
 
 .intro-buttons {

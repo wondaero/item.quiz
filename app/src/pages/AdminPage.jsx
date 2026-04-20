@@ -325,8 +325,14 @@ export default function AdminPage() {
                     <span className="gift-code">{g.code}</span>
                     <span className="gift-amount-tag">{g.amount.toLocaleString()}원</span>
                     <span className={`gift-status ${g.isUsed ? 'used' : 'available'}`}>
-                      {g.isUsed ? `발급됨 (${g.usedBy})` : '미발급'}
+                      {g.isUsed ? '사용완료' : '미사용'}
                     </span>
+                    <button
+                      className={`gift-toggle-btn ${g.isUsed ? 'revert' : 'issue'}`}
+                      onClick={() => setGiftCards((prev) => prev.map((c) => c.id === g.id ? { ...c, isUsed: !c.isUsed } : c))}
+                    >
+                      {g.isUsed ? '취소' : '사용완료'}
+                    </button>
                   </div>
                 ))}
               </div>

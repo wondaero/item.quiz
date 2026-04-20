@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '../store/useAuthStore'
-import { APP_NAME } from '../constants'
+// import logo from '../assets/logo1.png'
+import introBg from '../assets/intro-bg.png'
 import './IntroPage.css'
 
 export default function IntroPage() {
@@ -16,10 +17,13 @@ export default function IntroPage() {
   }
 
   return (
-    <div className="intro-page">
+    <div className="intro-page" style={{ backgroundImage: `url(${introBg})` }}>
       <div className="intro-logo">
-        <h1>{APP_NAME}</h1>
-        <p>단어를 연결해 정답을 찾아라</p>
+        <h1>
+          {/* <img src={logo} alt="Qwiz" className="intro-logo-img" /> */}
+          Qwiz
+        </h1>
+        <p>돈 버는 앱, 돈 되는 문제</p>
       </div>
       <div className="intro-buttons">
         <button className="btn-primary" onClick={handleStart}>시작하기</button>

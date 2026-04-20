@@ -570,6 +570,24 @@
   cursor: pointer;
 }
 
+.gift-toggle-btn {
+  border: none;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.gift-toggle-btn.issue {
+  background: var(--primary);
+  color: var(--btn-text);
+}
+.gift-toggle-btn.revert {
+  background: var(--surface);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
 .tab-section-header {
   display: flex;
   align-items: center;
