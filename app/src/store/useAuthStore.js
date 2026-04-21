@@ -7,7 +7,9 @@ const savedUser = (() => {
 
 const calcIsAdmin = (user) =>
   DEV_ACCESS.전체접근 || DEV_ACCESS.admin ||
-  (!import.meta.env.VITE_ADMIN_UID || user?.uid === import.meta.env.VITE_ADMIN_UID)
+  (!import.meta.env.VITE_ADMIN_UID ||
+    user?.uid === import.meta.env.VITE_ADMIN_UID ||
+    user?.kakaoId === import.meta.env.VITE_ADMIN_UID)
 
 const useAuthStore = create((set) => ({
   user: savedUser,
