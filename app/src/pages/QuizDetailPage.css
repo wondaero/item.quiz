@@ -43,9 +43,10 @@
 }
 
 .hints {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  white-space: pre-line;
+  text-align: center;
+  line-height: 1.8;
+  font-size: 1.1rem;
   width: 100%;
 }
 
@@ -61,7 +62,8 @@
 
 .answer-input-wrap {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 10px;
   width: 100%;
 }
 

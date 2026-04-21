@@ -23,6 +23,7 @@
 .my-header h2 {
   margin: 0;
   font-size: 1.3rem;
+  color: var(--text);
 }
 
 .my-profile {
@@ -98,8 +99,10 @@
 }
 
 .action-btn.admin {
+  background: var(--primary);
   border-color: var(--primary);
-  color: var(--primary);
+  color: var(--btn-text);
+  font-weight: 700;
 }
 
 .action-btn.logout {

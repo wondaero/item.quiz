@@ -184,7 +184,7 @@ export default function AdminPage() {
   return (
     <div className="admin-page">
       <header className="admin-header">
-        <button className="back-btn" onClick={() => navigate(-1)}>←</button>
+        <button className="back-btn" onClick={() => navigate(-1)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
         <h2>Admin</h2>
       </header>
 
@@ -198,7 +198,7 @@ export default function AdminPage() {
       {tab === 'quizzes' && (
         showForm ? (
           <div className="create-tab">
-            <button className="back-form-btn" onClick={closeForm}>← 목록으로</button>
+            <button className="back-form-btn" onClick={closeForm}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg> 목록으로</button>
 
             <div className="mode-toggle">
               <button className={`mode-btn ${!isHtml ? 'active' : ''}`} onClick={() => handleModeToggle(false)}>글자</button>
@@ -301,7 +301,7 @@ export default function AdminPage() {
       {tab === 'gift' && (
         showForm ? (
           <div className="gift-tab">
-            <button className="back-form-btn" onClick={() => setShowForm(false)}>← 목록으로</button>
+            <button className="back-form-btn" onClick={() => setShowForm(false)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg> 목록으로</button>
             <section>
               <label>상품권 코드 등록</label>
               <div className="gift-input-row">

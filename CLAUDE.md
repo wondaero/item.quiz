@@ -32,11 +32,16 @@
 ### 구현 완료
 - 전체 페이지: IntroPage, LoginPage, QuizListPage, QuizDetailPage, MyPage, ExchangePage, AdminPage
 - CSS 테마 시스템: `app/src/themes/dark.css` / `warm.css` — main.jsx import 한 줄로 전환
-  - 현재: `import './themes/warm.css'` (warm 테마 사용 중)
-- QuizDetailPage: runTransaction (동시 정답 방어), 이벤트 보상 로직, 포기 버튼 (왼쪽 상단 ←)
-- QuizListPage: Firebase 실제 연결 (목업 제거 완료)
+  - 현재: `import './themes/dark.css'` (dark 테마 사용 중, warm으로 바꾸려면 main.jsx 한 줄 변경)
+- QuizDetailPage: runTransaction (동시 정답 방어), 이벤트 보상 로직, 포기 버튼 (왼쪽 상단 SVG 쉐브론)
+  - 힌트: 배열을 `\n` 조인 + `white-space: pre-line` — 관리자가 엔터로 구분하면 줄바꿈, 옆에 쓰면 옆으로
+  - 정답 입력창이 세로 레이아웃 (input → 제출 버튼 순서)
+- QuizListPage: Firebase 실제 연결, 1열 리스트, 헤더에 소팅+필터(진행중/종료/전체)
+  - 우하단 floating pill 메뉴: 🏠홈 / 👤내정보 / 🎟무료참가권(활성/비활성)
+  - react-icons 설치 (hi2 패키지 사용)
 - 이벤트 보상: 가입 +500QW, 첫 정답 7일 내 +500QW, 추천인 1% 영구 수익쉐어
 - Firestore 보안 규칙: `firestore.rules` 파일 생성 (배포 대기)
+- 전체 페이지 뒤로가기 버튼: ← 텍스트 → SVG 쉐브론 아이콘으로 교체
 
 ### DEV_ACCESS (개발용 우회)
 `constants.js`의 DEV_ACCESS — `import.meta.env.DEV` 기반, 빌드 시 자동 제거됨
@@ -143,20 +148,45 @@ firebase.json
 
 ---
 
+## 보안 이슈 (Cloud Functions 붙이기 전까지 미해결)
+
+### 1. Admin ID 취득
+- `localStorage`에 `{uid: '4833965068'}` 직접 입력하면 Admin으로 인식됨
+- `VITE_ADMIN_UID` 값이 빌드된 JS 번들에 노출되어 uid 값 확인 가능
+- **피해 범위**: Admin 페이지 접근, 퀴즈 스팸 등록
+- **해결책**: Cloud Functions로 카카오 토큰 검증 → Firebase Custom Token 발급 → Firestore 규칙에서 `request.auth.uid` 서버사이드 검증
+
+### 2. 정답 유출
+- QuizDetailPage에서 퀴즈 문서 전체를 fetch하므로 `answers` 필드가 클라이언트에 노출됨
+- 개발자도구 Network 탭 또는 Firestore 직접 접근으로 정답 확인 가능
+- **해결책**: Cloud Functions에서 정답 검증 (클라이언트에 answers 필드 내려주지 않음)
+
+### 3. 포인트 직접 조작
+- Firestore 규칙이 Firebase Auth 미연동으로 인해 서버사이드 uid 검증 불가
+- 클라이언트에서 Firestore SDK로 직접 points 필드 조작 가능
+- **해결책**: Cloud Functions에서 정답 처리 및 포인트 지급 (클라이언트는 읽기만)
+
+> 세 가지 모두 **Cloud Functions + Firebase Custom Token** 도입으로 해결됨
+> 유저 생기기 전에 반드시 처리할 것
+
+---
+
 ## 남은 작업
 
-### 급한 것
-- [ ] Vercel 배포 + 카카오 도메인 등록 (외부 접근용)
-- [ ] Firestore 보안 규칙 배포: `firebase deploy --only firestore:rules`
+### 급한 것 (너가 해야 할 것)
+- [ ] Vercel 배포 + 카카오 도메인 등록 (외부 접근용, 모바일 테스트 위해)
+- [ ] Firestore 보안 규칙 배포: `firebase deploy --only firestore:rules` (Firebase CLI 설치 필요)
 - [ ] 카카오 개발자 콘솔 → 동의항목 → 닉네임 **필수동의** 설정 (현재 "익명"으로 뜸)
 
-### 기능 미완
-- [ ] AdMob 보상형 광고 연동 (handleAdWatched에 TODO)
+### 나랑 같이 해야 할 것
 - [ ] AdminPage 상품권 관리 — Firebase 실 연결 (현재 목업 데이터)
 - [ ] AdminPage 환전 신청 — Firebase 실 연결 (현재 목업 데이터)
 - [ ] 환전 신청 재고 부족 시 관리자 알림 (adminAlerts + onSnapshot)
-- [ ] FCM 푸시알림 (맥에서 Firebase 연결할 때)
-- [ ] /settings 페이지 (라우트만 있음, 페이지 미생성)
+- [ ] Cloud Functions: 카카오 토큰 → Firebase Custom Token (보안 이슈 3개 한 번에 해결)
+- [ ] IntroPage 배경 이미지 교체 (현재 dark 네온 이미지가 warm 테마와 안 어울림)
+- [ ] /settings 페이지 구현 (라우트만 있음)
+- [ ] AdMob 보상형 광고 연동 (handleAdWatched에 TODO, Android 빌드 후)
+- [ ] FCM 푸시알림
 - [ ] Capacitor Android 빌드 테스트
 
 ### 보류 아이디어

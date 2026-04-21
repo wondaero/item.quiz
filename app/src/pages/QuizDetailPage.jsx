@@ -236,17 +236,17 @@ export default function QuizDetailPage() {
         <div className="play-phase">
           <div className="bounty-display">{lockedBounty.toLocaleString()} {CURRENCY}</div>
           <div className="ticket-type-badge">{ticketType === 'paid' ? '광고 참가권' : '무료 참가권'}</div>
-          <div className="hints">
-            {quiz.hints.map((hint, i) => (
-              <div key={i} className="hint-item">
-                {quiz.isHtml
-                  ? <span dangerouslySetInnerHTML={{ __html: hint }} />
-                  : hint
-                }
-              </div>
-            ))}
-          </div>
-          <button className="play-back-btn" onClick={() => setShowQuitConfirm(true)}>←</button>
+          <p className="hints">
+            {quiz.isHtml
+              ? <span dangerouslySetInnerHTML={{ __html: quiz.hints.join('<br/>') }} />
+              : quiz.hints.join('\n')
+            }
+          </p>
+          <button className="play-back-btn" onClick={() => setShowQuitConfirm(true)}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
           {showQuitConfirm ? (
             <div className="quit-confirm">
               <p>정말 포기할까요?</p>
@@ -310,16 +310,12 @@ export default function QuizDetailPage() {
       {phase === 'archive' && (
         <div className="play-phase">
           <div className="archive-badge">종료된 문제</div>
-          <div className="hints">
-            {quiz.hints.map((hint, i) => (
-              <div key={i} className="hint-item">
-                {quiz.isHtml
-                  ? <span dangerouslySetInnerHTML={{ __html: hint }} />
-                  : hint
-                }
-              </div>
-            ))}
-          </div>
+          <p className="hints">
+            {quiz.isHtml
+              ? <span dangerouslySetInnerHTML={{ __html: quiz.hints.join('<br/>') }} />
+              : quiz.hints.join('\n')
+            }
+          </p>
           <div className="archive-answer">
             <span className="archive-answer-label">정답</span>
             <span className="archive-answer-value">{(quiz.answers ?? [quiz.answer]).join(' / ')}</span>

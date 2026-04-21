@@ -49,7 +49,7 @@ export default function ExchangePage() {
   return (
     <div className="exchange-page">
       <header className="exchange-header">
-        <button className="back-btn" onClick={() => navigate(-1)}>←</button>
+        <button className="back-btn" onClick={() => navigate(-1)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
         <h2>환전소</h2>
       </header>
 

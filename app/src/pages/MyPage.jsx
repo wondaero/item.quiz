@@ -31,7 +31,7 @@ export default function MyPage() {
   return (
     <div className="my-page">
       <header className="my-header">
-        <button className="back-btn" onClick={() => navigate(-1)}>←</button>
+        <button className="back-btn" onClick={() => navigate(-1)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
         <h2>내 정보</h2>
       </header>
 
