@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { doc, getDoc, updateDoc, increment, arrayUnion, Timestamp, onSnapshot, runTransaction } from 'firebase/firestore'
 import { db } from '../firebase/config'
@@ -6,8 +6,18 @@ import useAuthStore from '../store/useAuthStore'
 import './QuizDetailPage.css'
 import { CURRENCY, DEV_ACCESS, NEWBIE_FIRST_SOLVE, NEWBIE_PERIOD_DAYS, REFERRAL_REWARD, REFERRAL_SHARE_RATE } from '../constants'
 
-function getTodayString() {
-  return new Date().toISOString().slice(0, 10) // 'YYYY-MM-DD'
+const getTodayString = () => new Date().toISOString().slice(0, 10)
+const normalize = (s) => s.replace(/\s/g, '')
+
+function HintsDisplay({ hints, isHtml }) {
+  return (
+    <p className="hints">
+      {isHtml
+        ? <span dangerouslySetInnerHTML={{ __html: hints.join('<br/>') }} />
+        : hints.join('\n')
+      }
+    </p>
+  )
 }
 
 export default function QuizDetailPage() {
@@ -18,10 +28,10 @@ export default function QuizDetailPage() {
   const [quiz, setQuiz] = useState(null)
   const [userData, setUserData] = useState(null)
   const [answer, setAnswer] = useState('')
-  const [phase, setPhase] = useState('ticket') // 'ticket' | 'ad' | 'play' | 'result' | 'kicked'
-  const [ticketType, setTicketType] = useState(null) // 'paid' | 'free'
-  const [result, setResult] = useState(null) // 'correct' | 'wrong'
-  const [lockedBounty, setLockedBounty] = useState(0) // 입장 시점 고정 현상금
+  const [phase, setPhase] = useState('ticket')
+  const [ticketType, setTicketType] = useState(null)
+  const [result, setResult] = useState(null)
+  const [lockedBounty, setLockedBounty] = useState(0)
   const [loading, setLoading] = useState(true)
   const [showQuitConfirm, setShowQuitConfirm] = useState(false)
 
@@ -39,67 +49,59 @@ export default function QuizDetailPage() {
     fetchData()
   }, [id, user.uid])
 
-  // play 단계 진입 시 실시간 리스너 - 다른 사람이 먼저 맞추면 강제 아웃
   useEffect(() => {
     if (phase !== 'play' || !db) return
-
     const unsub = onSnapshot(doc(db, 'quizzes', id), async (snap) => {
       const data = snap.data()
       if (data?.solvedBy && data.solvedBy !== user.uid) {
-        if (db) {
-          const updates = [updateDoc(doc(db, 'quizzes', id), { activePlayers: increment(-1) })]
-          if (ticketType === 'free') updates.push(updateDoc(doc(db, 'users', user.uid), { freeTicketLastUsed: null }))
-          await Promise.all(updates)
-        }
+        await updateDoc(doc(db, 'quizzes', id), { activePlayers: increment(-1) })
         setPhase('kicked')
       }
     })
-
     return () => unsub()
-  }, [phase, id, user.uid, ticketType])
+  }, [phase, id, user.uid])
+
+  useEffect(() => {
+    if (quiz && quiz.solvedBy != null && phase === 'ticket') setPhase('archive')
+  }, [quiz, phase])
 
   const isSolved = quiz?.solvedBy != null
   const hasFreeTicketToday = (DEV_ACCESS.전체접근 || DEV_ACCESS.무료참가권쿨타임) || userData?.freeTicketLastUsed !== getTodayString()
 
-  // 종료된 문제는 바로 열람 모드로
-  useEffect(() => {
-    if (quiz && isSolved && phase === 'ticket') {
-      setPhase('archive')
-    }
-  }, [quiz, isSolved, phase])
+  const enterPlay = useCallback(async (type) => {
+    if (db) await updateDoc(doc(db, 'quizzes', id), { activePlayers: increment(1) })
+    setLockedBounty(quiz.bounty)
+    setTicketType(type)
+    setPhase('play')
+  }, [id, quiz])
 
   const handleSelectPaid = async () => {
     setTicketType('paid')
     if (DEV_ACCESS.전체접근 || DEV_ACCESS.광고) {
-      if (db) await updateDoc(doc(db, 'quizzes', id), { activePlayers: increment(1) })
-      setLockedBounty(quiz.bounty)
-      setPhase('play')
+      await enterPlay('paid')
     } else {
       setPhase('ad')
     }
   }
 
   const handleSelectFree = async () => {
-    if (db) await Promise.all([
-      updateDoc(doc(db, 'users', user.uid), { freeTicketLastUsed: getTodayString() }),
-      updateDoc(doc(db, 'quizzes', id), { activePlayers: increment(1) }),
-    ])
-    setLockedBounty(quiz.bounty)
-    setTicketType('free')
-    setPhase('play')
+    if (db) await updateDoc(doc(db, 'users', user.uid), { freeTicketLastUsed: getTodayString() })
+    await enterPlay('free')
   }
 
   const handleAdWatched = async () => {
     // TODO: 실제 AdMob 광고 시청 완료 후 호출
-    if (db) await updateDoc(doc(db, 'quizzes', id), { activePlayers: increment(1) })
-    setLockedBounty(quiz.bounty)
-    setPhase('play')
+    await enterPlay('paid')
+  }
+
+  const handleQuit = async () => {
+    if (db) await updateDoc(doc(db, 'quizzes', id), { activePlayers: increment(-1) })
+    navigate('/quiz')
   }
 
   const handleSubmit = async () => {
     if (!answer.trim()) return
 
-    const normalize = (s) => s.replace(/\s/g, '')
     const acceptedAnswers = quiz.answers ?? [quiz.answer]
     const isCorrect = acceptedAnswers.some((a) => normalize(a) === normalize(answer))
 
@@ -115,13 +117,11 @@ export default function QuizDetailPage() {
               transaction.get(userRef),
             ])
 
-            // 이미 다른 사람이 정답 - 동시 제출 방어
             if (quizDoc.data()?.solvedBy) throw new Error('ALREADY_SOLVED')
 
             const uData = userDoc.data()
             const now = Timestamp.now()
 
-            // 신규 첫 정답 보너스 계산
             let totalGain = lockedBounty
             let claimNewbie = false
             if (!uData.newbieBonusClaimed && uData.joinedAt) {
@@ -132,33 +132,21 @@ export default function QuizDetailPage() {
               }
             }
 
-            transaction.update(quizRef, {
-              solvedBy: user.uid,
-              solvedAt: now,
-              activePlayers: increment(-1),
-            })
+            transaction.update(quizRef, { solvedBy: user.uid, solvedAt: now, activePlayers: increment(-1) })
             transaction.update(userRef, {
               points: increment(totalGain),
               ...(claimNewbie && { newbieBonusClaimed: true }),
             })
 
-            // 추천인 보상
             if (uData.referredBy) {
               const referrerRef = doc(db, 'users', uData.referredBy)
-              // 1% 영구 수익쉐어
               let referrerGain = Math.floor(lockedBounty * REFERRAL_SHARE_RATE)
-              // 첫 정답 달성 시 추천인 보너스 추가
               if (claimNewbie) referrerGain += REFERRAL_REWARD
-              if (referrerGain > 0) {
-                transaction.update(referrerRef, { points: increment(referrerGain) })
-              }
+              if (referrerGain > 0) transaction.update(referrerRef, { points: increment(referrerGain) })
             }
           })
         } catch (e) {
-          if (e.message === 'ALREADY_SOLVED') {
-            setPhase('kicked')
-            return
-          }
+          if (e.message === 'ALREADY_SOLVED') { setPhase('kicked'); return }
           console.error('정답 처리 오류', e)
           return
         }
@@ -236,12 +224,7 @@ export default function QuizDetailPage() {
         <div className="play-phase">
           <div className="bounty-display">{lockedBounty.toLocaleString()} {CURRENCY}</div>
           <div className="ticket-type-badge">{ticketType === 'paid' ? '광고 참가권' : '무료 참가권'}</div>
-          <p className="hints">
-            {quiz.isHtml
-              ? <span dangerouslySetInnerHTML={{ __html: quiz.hints.join('<br/>') }} />
-              : quiz.hints.join('\n')
-            }
-          </p>
+          <HintsDisplay hints={quiz.hints} isHtml={quiz.isHtml} />
           <button className="play-back-btn" onClick={() => setShowQuitConfirm(true)}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
@@ -252,10 +235,7 @@ export default function QuizDetailPage() {
               <p>정말 포기할까요?</p>
               <p className="notice">참가권은 환불되지 않아요</p>
               <div className="quit-confirm-btns">
-                <button className="btn-primary" onClick={async () => {
-                  if (db) await updateDoc(doc(db, 'quizzes', id), { activePlayers: increment(-1) })
-                  navigate('/quiz')
-                }}>포기</button>
+                <button className="btn-primary" onClick={handleQuit}>포기</button>
                 <button className="btn-ghost" onClick={() => setShowQuitConfirm(false)}>계속 도전</button>
               </div>
             </div>
@@ -295,11 +275,7 @@ export default function QuizDetailPage() {
                 : <p className="result-sub">현상금 변동 없음</p>
               }
               <button className="btn-primary" onClick={() => {
-                setAnswer('')
-                setResult(null)
-                setTicketType(null)
-                setLockedBounty(0)
-                setPhase('ticket')
+                setAnswer(''); setResult(null); setTicketType(null); setLockedBounty(0); setPhase('ticket')
               }}>다시 도전하기</button>
             </>
           )}
@@ -310,12 +286,7 @@ export default function QuizDetailPage() {
       {phase === 'archive' && (
         <div className="play-phase">
           <div className="archive-badge">종료된 문제</div>
-          <p className="hints">
-            {quiz.isHtml
-              ? <span dangerouslySetInnerHTML={{ __html: quiz.hints.join('<br/>') }} />
-              : quiz.hints.join('\n')
-            }
-          </p>
+          <HintsDisplay hints={quiz.hints} isHtml={quiz.isHtml} />
           <div className="archive-answer">
             <span className="archive-answer-label">정답</span>
             <span className="archive-answer-value">{(quiz.answers ?? [quiz.answer]).join(' / ')}</span>
@@ -328,9 +299,7 @@ export default function QuizDetailPage() {
         <div className="result-phase">
           <div className="result-icon">🚨</div>
           <h2>다른 사람이 먼저 맞췄어요</h2>
-          <p className="result-sub">
-            {ticketType === 'free' ? '무료 참가권이 복구됐어요' : '참가권은 유지됩니다'}
-          </p>
+          <p className="result-sub">참가권은 유지됩니다</p>
           <button className="btn-primary" onClick={() => navigate('/quiz')}>목록으로</button>
         </div>
       )}

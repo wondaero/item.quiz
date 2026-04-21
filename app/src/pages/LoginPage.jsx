@@ -7,6 +7,18 @@ import useAuthStore from '../store/useAuthStore'
 import { SIGNUP_REWARD } from '../constants'
 import './LoginPage.css'
 
+const kakaoLogin = () => new Promise((resolve, reject) => {
+  window.Kakao.Auth.login({
+    throughTalk: !import.meta.env.DEV,
+    success: resolve,
+    fail: reject,
+  })
+})
+
+const kakaoGetProfile = () => new Promise((resolve, reject) => {
+  window.Kakao.API.request({ url: '/v2/user/me', success: resolve, fail: reject })
+})
+
 export default function LoginPage() {
   const navigate = useNavigate()
   const setUser = useAuthStore((s) => s.setUser)
@@ -17,45 +29,39 @@ export default function LoginPage() {
     }
   }, [])
 
-  const handleKakaoLogin = () => {
-    window.Kakao.Auth.login({
-      throughTalk: !import.meta.env.DEV,
-      success: async () => {
-        window.Kakao.API.request({
-          url: '/v2/user/me',
-          success: async (res) => {
-            const kakaoId = String(res.id)
-            const nickname = res.kakao_account?.profile?.nickname ?? '유저'
-            const profileImage = res.kakao_account?.profile?.profile_image_url ?? null
+  const handleKakaoLogin = async () => {
+    try {
+      await kakaoLogin()
+      const res = await kakaoGetProfile()
 
-            // Firebase Anonymous Auth로 Firestore 보안 규칙 적용
-            const { user: firebaseUser } = await signInAnonymously(auth)
-            const uid = firebaseUser.uid
+      const kakaoId = String(res.id)
+      const nickname = res.kakao_account?.profile?.nickname ?? '유저'
+      const profileImage = res.kakao_account?.profile?.profile_image_url ?? null
 
-            const userRef = doc(db, 'users', uid)
-            const snap = await getDoc(userRef)
-            if (!snap.exists()) {
-              await setDoc(userRef, {
-                kakaoId,
-                nickname,
-                profileImage,
-                points: SIGNUP_REWARD,
-                attempts: 0,
-                freeTicketLastUsed: null,
-                referredBy: null,
-                joinedAt: Timestamp.now(),
-                newbieBonusClaimed: false,
-              })
-            }
+      const { user: firebaseUser } = await signInAnonymously(auth)
+      const uid = firebaseUser.uid
 
-            setUser({ uid, kakaoId, nickname, profileImage })
-            navigate('/quiz')
-          },
-          fail: (err) => console.error('카카오 사용자 정보 실패', err),
+      const userRef = doc(db, 'users', uid)
+      const snap = await getDoc(userRef)
+      if (!snap.exists()) {
+        await setDoc(userRef, {
+          kakaoId,
+          nickname,
+          profileImage,
+          points: SIGNUP_REWARD,
+          attempts: 0,
+          freeTicketLastUsed: null,
+          referredBy: null,
+          joinedAt: Timestamp.now(),
+          newbieBonusClaimed: false,
         })
-      },
-      fail: (err) => console.error('카카오 로그인 실패', err),
-    })
+      }
+
+      setUser({ uid, kakaoId, nickname, profileImage })
+      navigate('/quiz')
+    } catch (err) {
+      console.error('로그인 실패', err)
+    }
   }
 
   return (

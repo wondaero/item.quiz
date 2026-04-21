@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { collection, addDoc, getDocs, updateDoc, doc, Timestamp, orderBy, query, where, getCountFromServer } from 'firebase/firestore'
 import { db } from '../firebase/config'
@@ -7,6 +7,8 @@ import './AdminPage.css'
 import { CURRENCY } from '../constants'
 
 const BOUNTY_OPTIONS = [500, 1000, 2000, 3000, 5000]
+const POINT_TIERS = [2500, 5000, 10000, 20000]
+const GIFT_TIERS = [3000, 5000, 10000]
 
 function toDatetimeLocal(ts) {
   if (!ts) return ''
@@ -14,39 +16,65 @@ function toDatetimeLocal(ts) {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
 }
 
+const ChevronLeft = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="15 18 9 12 15 6" />
+  </svg>
+)
+
 export default function AdminPage() {
   const navigate = useNavigate()
   const isAdmin = useAuthStore((s) => s.isAdmin)
 
   const [tab, setTab] = useState('quizzes')
   const [showForm, setShowForm] = useState(false)
-  const [editingQuiz, setEditingQuiz] = useState(null) // null = 신규, object = 수정
+  const [editingQuiz, setEditingQuiz] = useState(null)
 
-  // 대시보드
   const [dashLoading, setDashLoading] = useState(false)
   const [dashData, setDashData] = useState(null)
 
-  // 문제 폼
   const [isHtml, setIsHtml] = useState(false)
   const [hintsText, setHintsText] = useState('')
   const [showPreview, setShowPreview] = useState(false)
   const [answerText, setAnswerText] = useState('')
   const [bounty, setBounty] = useState(1000)
   const [customBounty, setCustomBounty] = useState('')
-  const [publishAt, setPublishAt] = useState('') // datetime-local string
+  const [publishAt, setPublishAt] = useState('')
   const [quizzes, setQuizzes] = useState([])
   const [submitting, setSubmitting] = useState(false)
 
-  // 상품권 관리
   const [giftCode, setGiftCode] = useState('')
   const [giftAmount, setGiftAmount] = useState('')
-  const [giftCards, setGiftCards] = useState([
-    { id: '1', code: 'CULTURE-1234-5678', amount: 10000, isUsed: false },
-    { id: '2', code: 'CULTURE-9999-0000', amount: 5000, isUsed: true, usedBy: 'kakao_1234567890' },
-  ])
-  const [exchangeRequests] = useState([
-    { id: '1', nickname: '테스트유저', amount: 10000, status: 'pending', requestedAt: '2026-04-07' },
-  ])
+  const [giftCards, setGiftCards] = useState([])
+  const [exchangeRequests, setExchangeRequests] = useState([])
+
+  useEffect(() => { if (!isAdmin) navigate('/') }, [isAdmin, navigate])
+
+  const fetchQuizzes = useCallback(async () => {
+    if (!db) return
+    const snap = await getDocs(query(collection(db, 'quizzes'), orderBy('createdAt', 'desc')))
+    setQuizzes(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+  }, [])
+
+  const fetchDashboard = useCallback(async () => {
+    if (!db) return
+    setDashLoading(true)
+    try {
+      const [usersSnap, pendingSnap] = await Promise.all([
+        getDocs(query(collection(db, 'users'), where('points', '>=', Math.min(...GIFT_TIERS)))),
+        getCountFromServer(query(collection(db, 'exchanges'), where('status', '==', 'pending'))),
+      ])
+      setDashData({
+        userPoints: usersSnap.docs.map((d) => d.data().points),
+        pendingCount: pendingSnap.data().count,
+      })
+    } finally {
+      setDashLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { if (tab === 'quizzes' && !showForm) fetchQuizzes() }, [tab, showForm, fetchQuizzes])
+  useEffect(() => { if (tab === 'dashboard') fetchDashboard() }, [tab, fetchDashboard])
 
   const handleTabChange = (t) => { setTab(t); setShowForm(false); setEditingQuiz(null) }
 
@@ -79,51 +107,10 @@ export default function AdminPage() {
 
   const handleAddGiftCard = () => {
     if (!giftCode.trim() || !giftAmount) return
-    setGiftCards([...giftCards, { id: Date.now().toString(), code: giftCode.trim(), amount: Number(giftAmount), isUsed: false }])
+    setGiftCards((prev) => [...prev, { id: Date.now().toString(), code: giftCode.trim(), amount: Number(giftAmount), isUsed: false }])
     setGiftCode('')
     setGiftAmount('')
     setShowForm(false)
-  }
-
-  useEffect(() => { if (!isAdmin) navigate('/') }, [isAdmin])
-  useEffect(() => { if (tab === 'quizzes' && !showForm) fetchQuizzes() }, [tab, showForm])
-  useEffect(() => { if (tab === 'dashboard') fetchDashboard() }, [tab])
-
-  const POINT_TIERS = [2500, 5000, 10000, 20000]
-  const GIFT_TIERS = [3000, 5000, 10000]
-
-  const fetchDashboard = async () => {
-    setDashLoading(true)
-    try {
-      if (!db) {
-        // 개발용 목업
-        const mockPoints = [3500, 6000, 12000, 4200, 8000]
-        setDashData({
-          userPoints: mockPoints,
-          pendingCount: 1,
-        })
-        return
-      }
-      const [usersSnap, pendingSnap] = await Promise.all([
-        getDocs(query(collection(db, 'users'), where('points', '>=', Math.min(...GIFT_TIERS)))),
-        getCountFromServer(query(collection(db, 'exchanges'), where('status', '==', 'pending'))),
-      ])
-      setDashData({
-        userPoints: usersSnap.docs.map((d) => d.data().points),
-        pendingCount: pendingSnap.data().count,
-      })
-    } finally {
-      setDashLoading(false)
-    }
-  }
-
-  const handleModeToggle = (html) => { setIsHtml(html); setHintsText(''); setShowPreview(false) }
-
-  const fetchQuizzes = async () => {
-    if (!db) return
-    const q = query(collection(db, 'quizzes'), orderBy('createdAt', 'desc'))
-    const snap = await getDocs(q)
-    setQuizzes(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
   }
 
   const getHintsArray = () => hintsText.split('\n').map((h) => h.trim()).filter(Boolean).slice(0, 5)
@@ -173,18 +160,18 @@ export default function AdminPage() {
     }
   }
 
-  const hintsArray = getHintsArray()
-
   const formatPublishAt = (ts) => {
     if (!ts) return null
     const d = ts.toDate ? ts.toDate() : new Date(ts)
     return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} 공개`
   }
 
+  const hintsArray = getHintsArray()
+
   return (
     <div className="admin-page">
       <header className="admin-header">
-        <button className="back-btn" onClick={() => navigate(-1)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button className="back-btn" onClick={() => navigate(-1)}><ChevronLeft /></button>
         <h2>Admin</h2>
       </header>
 
@@ -194,15 +181,14 @@ export default function AdminPage() {
         <button className={tab === 'dashboard' ? 'active' : ''} onClick={() => handleTabChange('dashboard')}>대시보드</button>
       </div>
 
-      {/* 문제 관리 */}
       {tab === 'quizzes' && (
         showForm ? (
           <div className="create-tab">
-            <button className="back-form-btn" onClick={closeForm}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg> 목록으로</button>
+            <button className="back-form-btn" onClick={closeForm}><ChevronLeft /> 목록으로</button>
 
             <div className="mode-toggle">
-              <button className={`mode-btn ${!isHtml ? 'active' : ''}`} onClick={() => handleModeToggle(false)}>글자</button>
-              <button className={`mode-btn ${isHtml ? 'active' : ''}`} onClick={() => handleModeToggle(true)}>HTML</button>
+              <button className={`mode-btn ${!isHtml ? 'active' : ''}`} onClick={() => { setIsHtml(false); setHintsText(''); setShowPreview(false) }}>글자</button>
+              <button className={`mode-btn ${isHtml ? 'active' : ''}`} onClick={() => { setIsHtml(true); setHintsText(''); setShowPreview(false) }}>HTML</button>
             </div>
 
             <section>
@@ -297,11 +283,10 @@ export default function AdminPage() {
         )
       )}
 
-      {/* 상품권 관리 */}
       {tab === 'gift' && (
         showForm ? (
           <div className="gift-tab">
-            <button className="back-form-btn" onClick={() => setShowForm(false)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg> 목록으로</button>
+            <button className="back-form-btn" onClick={() => setShowForm(false)}><ChevronLeft /> 목록으로</button>
             <section>
               <label>상품권 코드 등록</label>
               <div className="gift-input-row">
@@ -335,6 +320,7 @@ export default function AdminPage() {
                     </button>
                   </div>
                 ))}
+                {giftCards.length === 0 && <p className="empty-msg">등록된 상품권이 없습니다</p>}
               </div>
             </section>
             <section>
@@ -356,7 +342,7 @@ export default function AdminPage() {
           </div>
         )
       )}
-      {/* 대시보드 */}
+
       {tab === 'dashboard' && (
         <div className="dashboard-tab">
           <div className="dash-section-header">
@@ -376,7 +362,6 @@ export default function AdminPage() {
             const totalAction = recommendations.filter(r => r.toBuy > 0).length
             return (
               <>
-                {/* 준비 권장 */}
                 <section>
                   <label>준비 권장</label>
                   <div className="dash-recommend-list">
@@ -384,22 +369,17 @@ export default function AdminPage() {
                       <div key={r.amount} className={`dash-recommend-item ${r.toBuy > 0 ? 'action' : 'ok'}`}>
                         <span className="dash-recommend-amount">{r.amount.toLocaleString()}원 카드</span>
                         <span className="dash-recommend-msg">
-                          {r.toBuy > 0
-                            ? `${r.toBuy}장 구매 필요`
-                            : '충분'}
+                          {r.toBuy > 0 ? `${r.toBuy}장 구매 필요` : '충분'}
                         </span>
                         <span className="dash-recommend-detail">
                           재고 {r.stock}장 · 필요 {r.needed}장
                         </span>
                       </div>
                     ))}
-                    {totalAction === 0 && (
-                      <p className="dash-all-ok">현재 재고로 충분합니다</p>
-                    )}
+                    {totalAction === 0 && <p className="dash-all-ok">현재 재고로 충분합니다</p>}
                   </div>
                 </section>
 
-                {/* 포인트 현황 */}
                 <section>
                   <label>포인트 보유 현황</label>
                   <div className="dash-grid">
@@ -415,10 +395,9 @@ export default function AdminPage() {
                   </div>
                 </section>
 
-                {/* 환전 대기 */}
                 {dashData.pendingCount > 0 && (
                   <section>
-                    <div className={`dash-pending warning`}>
+                    <div className="dash-pending warning">
                       <span className="dash-count">{dashData.pendingCount}건</span>
                       <span className="dash-label">환전 신청 처리 대기 중</span>
                     </div>

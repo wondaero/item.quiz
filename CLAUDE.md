@@ -42,6 +42,10 @@
 - 이벤트 보상: 가입 +500QW, 첫 정답 7일 내 +500QW, 추천인 1% 영구 수익쉐어
 - Firestore 보안 규칙: `firestore.rules` 파일 생성 (배포 대기)
 - 전체 페이지 뒤로가기 버튼: ← 텍스트 → SVG 쉐브론 아이콘으로 교체
+- **코드 정리 완료** (react 고수 스타일):
+  - `LoginPage`: callback hell → async/await, Kakao SDK Promise 래핑
+  - `QuizDetailPage`: `normalize` 컴포넌트 밖으로, `HintsDisplay` 컴포넌트 분리, `enterPlay` useCallback, `handleQuit` 네임드 함수
+  - `AdminPage`: `ChevronLeft` SVG 컴포넌트 추출, `POINT_TIERS`/`GIFT_TIERS` 컴포넌트 밖으로, `fetchQuizzes`/`fetchDashboard` useCallback, 목업 데이터 제거 (giftCards/exchangeRequests 빈 배열)
 
 ### DEV_ACCESS (개발용 우회)
 `constants.js`의 DEV_ACCESS — `import.meta.env.DEV` 기반, 빌드 시 자동 제거됨
@@ -179,8 +183,8 @@ firebase.json
 - [ ] 카카오 개발자 콘솔 → 동의항목 → 닉네임 **필수동의** 설정 (현재 "익명"으로 뜸)
 
 ### 나랑 같이 해야 할 것
-- [ ] AdminPage 상품권 관리 — Firebase 실 연결 (현재 목업 데이터)
-- [ ] AdminPage 환전 신청 — Firebase 실 연결 (현재 목업 데이터)
+- [ ] AdminPage 상품권 관리 — Firebase 실 연결 (목업 제거됨, 빈 배열 상태)
+- [ ] AdminPage 환전 신청 — Firebase 실 연결 (목업 제거됨, 빈 배열 상태)
 - [ ] 환전 신청 재고 부족 시 관리자 알림 (adminAlerts + onSnapshot)
 - [ ] Cloud Functions: 카카오 토큰 → Firebase Custom Token (보안 이슈 3개 한 번에 해결)
 - [ ] IntroPage 배경 이미지 교체 (현재 dark 네온 이미지가 warm 테마와 안 어울림)
