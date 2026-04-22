@@ -52,6 +52,26 @@
   font-weight: 600;
 }
 
+.level-badge {
+  background: var(--primary);
+  color: var(--btn-text);
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.level-bonus {
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.level-next {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
 .my-stats {
   display: flex;
   flex-direction: column;

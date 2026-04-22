@@ -196,6 +196,11 @@ export default function AdminPage() {
     }
   }
 
+  const formatCreatedAt = (ts) => {
+    const d = ts.toDate ? ts.toDate() : new Date(ts)
+    return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+  }
+
   const formatPublishAt = (ts) => {
     if (!ts) return null
     const d = ts.toDate ? ts.toDate() : new Date(ts)
@@ -361,6 +366,7 @@ export default function AdminPage() {
               <div key={q.id} className={`admin-quiz-card ${q.solvedBy ? 'solved' : ''}`}>
                 <div className="admin-quiz-card-top">
                   <span className="admin-quiz-id">#{q.id.slice(0, 6)}</span>
+                  {q.createdAt && <span className="admin-quiz-date">{formatCreatedAt(q.createdAt)}</span>}
                   {!q.solvedBy && <button className="edit-quiz-btn" onClick={() => openEdit(q)}>수정</button>}
                   {q.solvedBy && <span className="solved-tag">종료</span>}
                 </div>

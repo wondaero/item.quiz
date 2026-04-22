@@ -15,6 +15,22 @@
   margin-top: 40vh;
 }
 
+.levelup-banner {
+  background: var(--primary);
+  color: var(--btn-text);
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+  animation: levelup-pop 0.4s ease;
+}
+
+@keyframes levelup-pop {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 .ticket-phase, .ad-phase, .play-phase, .result-phase {
   display: flex;
   flex-direction: column;

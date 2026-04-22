@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
-import { CURRENCY } from '../constants'
+import { CURRENCY, calcLevel, LEVEL_THRESHOLDS } from '../constants'
 import './MyPage.css'
 
 const initKakao = () => {
@@ -47,6 +47,10 @@ export default function MyPage() {
     })
   }
 
+  const level = calcLevel(userData?.attempts ?? 0, userData?.solvedCount ?? 0)
+  const nextThreshold = LEVEL_THRESHOLDS.find(t => t.level === level + 1)
+  const levelBonus = LEVEL_THRESHOLDS.find(t => t.level === level)?.bonus ?? 0
+
   return (
     <div className="my-page">
       <header className="my-header">
@@ -57,6 +61,10 @@ export default function MyPage() {
       <div className="my-profile">
         <div className="avatar">{user?.nickname?.[0] ?? '?'}</div>
         <p className="username">{user?.nickname ?? '유저'}</p>
+        <div className="level-badge">Lv.{level}{levelBonus > 0 && <span className="level-bonus"> +{(levelBonus * 100).toFixed(0)}%</span>}</div>
+        {nextThreshold && (
+          <p className="level-next">다음 레벨: 도전 {nextThreshold.attempts}회 또는 정답 {nextThreshold.solved}회</p>
+        )}
       </div>
 
       <div className="my-stats">

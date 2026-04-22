@@ -66,6 +66,20 @@
   - 퀴즈 미리보기 섹션: 힌트 입력 후 "펼치기" 버튼으로 실제 게임처럼 프리뷰 카드 표시
   - `adminNote` 필드: 폼에 입력란 추가, Firestore 저장, 목록 카드에 왼쪽 포인트 테두리로 표시
 - **MyPage 개선**: "상점 · 환전" 버튼 추가 → `/exchange`
+- **ExchangePage 개선**: 직접 입력 제거, 버튼 선택만 (3000/5000/10000/20000), 포인트 부족 옵션 흐리게 표시
+- **추천인 코드 시스템**: 카카오ID를 추천 코드로 사용
+  - App.jsx: `?ref=` 파라미터 감지 → localStorage 저장
+  - LoginPage: 신규 가입 시 `referredBy` 자동 저장 후 localStorage 정리
+  - MyPage: 추천 코드 표시 + 복사 + 카카오 공유 버튼 (노란 카카오 스타일)
+- **레벨 시스템**: `constants.js`의 `LEVEL_THRESHOLDS`로 관리 (숫자 변경 시 여기서만)
+  - 조건: attempts(틀림 누적) OR solvedCount(맞춤 누적) 둘 중 하나 충족 시 레벨업
+  - 혜택: 레벨별 현상금 보너스 0~5% (1%씩 증가)
+  - Firestore users에 `solvedCount` 필드 추가
+  - 정답 시 레벨업 감지 → 결과 화면에 "레벨 업!" 배너 표시 (팝 애니메이션)
+  - MyPage에 현재 레벨 뱃지 + 보너스% + 다음 레벨 조건 표시
+- **AdminPage 개선**: 퀴즈 카드에 출제일 표시 (`월/일 시:분` 형태)
+- **무료 참가권 kicked 복구**: 다른 사람이 먼저 맞춰서 강제 아웃 시 무료권 자동 복구
+- **vercel.json**: SPA 새로고침 404 방지 rewrites 설정
 
 ### DEV_ACCESS (개발용 우회)
 `constants.js`의 DEV_ACCESS — `import.meta.env.DEV` 기반, 빌드 시 자동 제거됨

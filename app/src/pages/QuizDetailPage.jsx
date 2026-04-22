@@ -4,7 +4,7 @@ import { doc, getDoc, updateDoc, increment, arrayUnion, Timestamp, onSnapshot, r
 import { db } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
 import './QuizDetailPage.css'
-import { CURRENCY, DEV_ACCESS, NEWBIE_FIRST_SOLVE, NEWBIE_PERIOD_DAYS, REFERRAL_REWARD, REFERRAL_SHARE_RATE } from '../constants'
+import { CURRENCY, DEV_ACCESS, NEWBIE_FIRST_SOLVE, NEWBIE_PERIOD_DAYS, REFERRAL_REWARD, REFERRAL_SHARE_RATE, getLevelBonus, calcLevel } from '../constants'
 
 const getTodayString = () => new Date().toISOString().slice(0, 10)
 const normalize = (s) => s.replace(/\s/g, '')
@@ -31,6 +31,7 @@ export default function QuizDetailPage() {
   const [phase, setPhase] = useState('ticket')
   const [ticketType, setTicketType] = useState(null)
   const [result, setResult] = useState(null)
+  const [leveledUp, setLeveledUp] = useState(null)
   const [lockedBounty, setLockedBounty] = useState(0)
   const [loading, setLoading] = useState(true)
   const [showQuitConfirm, setShowQuitConfirm] = useState(false)
@@ -126,7 +127,11 @@ export default function QuizDetailPage() {
             const uData = userDoc.data()
             const now = Timestamp.now()
 
-            let totalGain = lockedBounty
+            const oldLevel = calcLevel(uData.attempts ?? 0, uData.solvedCount ?? 0)
+            const newLevel = calcLevel(uData.attempts ?? 0, (uData.solvedCount ?? 0) + 1)
+            const levelBonus = getLevelBonus(uData.attempts ?? 0, uData.solvedCount ?? 0)
+            let totalGain = lockedBounty + Math.floor(lockedBounty * levelBonus)
+            if (newLevel > oldLevel) setLeveledUp(newLevel)
             let claimNewbie = false
             if (!uData.newbieBonusClaimed && uData.joinedAt) {
               const daysSinceJoin = (now.toMillis() - uData.joinedAt.toMillis()) / 86400000
@@ -139,6 +144,7 @@ export default function QuizDetailPage() {
             transaction.update(quizRef, { solvedBy: user.uid, solvedAt: now, activePlayers: increment(-1) })
             transaction.update(userRef, {
               points: increment(totalGain),
+              solvedCount: increment(1),
               ...(claimNewbie && { newbieBonusClaimed: true }),
             })
 
@@ -264,6 +270,9 @@ export default function QuizDetailPage() {
 
       {phase === 'result' && (
         <div className="result-phase">
+          {leveledUp && (
+            <div className="levelup-banner">🎊 레벨 업! Lv.{leveledUp} 달성</div>
+          )}
           {result === 'correct' ? (
             <>
               <div className="result-icon">🎉</div>

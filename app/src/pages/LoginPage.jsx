@@ -51,6 +51,7 @@ export default function LoginPage() {
           profileImage,
           points: SIGNUP_REWARD,
           attempts: 0,
+          solvedCount: 0,
           freeTicketLastUsed: null,
           referredBy: ref,
           joinedAt: Timestamp.now(),
