@@ -1,5 +1,14 @@
 # Item Quiz (Qwiz) - 프로젝트 컨텍스트
 
+## Claude에게 (협업 규칙)
+- 기능 추가/변경 요청이 오면 **바로 구현하지 말고**, 개발 관점 + 사업 마인드로 의견을 먼저 말한 뒤 대화 후 실행할 것
+- 의견은 2~3문장으로 핵심만, 너무 길게 쓰지 말 것
+- 단순 버그픽스, 텍스트 수정은 예외 (바로 실행)
+- 작업 완료 후 CLAUDE.md에 변경 내용 기록할 것
+
+---
+
+
 ## 앱 개념
 연상 단어 퀴즈 게임 앱. 관리자(개발자 본인)가 힌트 단어 3~5개를 올리면 유저들이 광고를 보고 입장해서 정답을 맞추는 구조.
 
@@ -46,6 +55,17 @@
   - `LoginPage`: callback hell → async/await, Kakao SDK Promise 래핑
   - `QuizDetailPage`: `normalize` 컴포넌트 밖으로, `HintsDisplay` 컴포넌트 분리, `enterPlay` useCallback, `handleQuit` 네임드 함수
   - `AdminPage`: `ChevronLeft` SVG 컴포넌트 추출, `POINT_TIERS`/`GIFT_TIERS` 컴포넌트 밖으로, `fetchQuizzes`/`fetchDashboard` useCallback, 목업 데이터 제거 (giftCards/exchangeRequests 빈 배열)
+- **vercel.json 추가** (`rewrites` 설정) — SPA 새로고침 404 방지
+- **QuizListPage 개선**:
+  - 퀴즈 카드에 ID 표시 (`#abc123` 형태, 6자리)
+  - Admin 로그인 시 카드에 `adminNote` 이탤릭 표시
+  - 플로팅 메뉴에 상점 버튼(`HiShoppingBag`) 추가 → `/exchange`
+- **AdminPage 개선**:
+  - 퀴즈 목록 카드: 힌트를 pill 대신 게임에서 보이는 그대로 텍스트 표시 (`HintsPreview` 컴포넌트)
+  - 복수 정답 UI: `answers` 배열 상태, + 추가 / × 삭제
+  - 퀴즈 미리보기 섹션: 힌트 입력 후 "펼치기" 버튼으로 실제 게임처럼 프리뷰 카드 표시
+  - `adminNote` 필드: 폼에 입력란 추가, Firestore 저장, 목록 카드에 왼쪽 포인트 테두리로 표시
+- **MyPage 개선**: "상점 · 환전" 버튼 추가 → `/exchange`
 
 ### DEV_ACCESS (개발용 우회)
 `constants.js`의 DEV_ACCESS — `import.meta.env.DEV` 기반, 빌드 시 자동 제거됨
@@ -185,6 +205,7 @@ firebase.json
 ### 나랑 같이 해야 할 것
 - [ ] AdminPage 상품권 관리 — Firebase 실 연결 (목업 제거됨, 빈 배열 상태)
 - [ ] AdminPage 환전 신청 — Firebase 실 연결 (목업 제거됨, 빈 배열 상태)
+- [ ] ExchangePage(상점) — 현재 환전 신청만 있음, 추후 기능 확장 가능
 - [ ] 환전 신청 재고 부족 시 관리자 알림 (adminAlerts + onSnapshot)
 - [ ] Cloud Functions: 카카오 토큰 → Firebase Custom Token (보안 이슈 3개 한 번에 해결)
 - [ ] IntroPage 배경 이미지 교체 (현재 dark 네온 이미지가 warm 테마와 안 어울림)

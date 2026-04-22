@@ -57,9 +57,10 @@ export default function MyPage() {
       </div>
 
       <div className="my-actions">
-{isAdmin && (
+        {isAdmin && (
           <button className="action-btn admin" onClick={() => navigate('/admin')}>Admin 페이지</button>
         )}
+        <button className="action-btn" onClick={() => navigate('/exchange')}>상점 · 환전</button>
         <button className="action-btn logout" onClick={handleLogout}>로그아웃</button>
       </div>
     </div>

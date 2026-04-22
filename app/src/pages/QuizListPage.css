@@ -100,12 +100,33 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  flex: 1;
+}
+
+.quiz-card-top-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
 }
 
 .quiz-card-bounty {
   font-size: 1.2rem;
   font-weight: 900;
   color: var(--primary);
+}
+
+.quiz-card-id {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-family: monospace;
+}
+
+.quiz-card-admin-note {
+  font-size: 0.78rem;
+  color: var(--primary);
+  opacity: 0.7;
+  margin: 0;
+  font-style: italic;
 }
 
 .quiz-card-tags {

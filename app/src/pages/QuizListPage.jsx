@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { collection, query, orderBy, getDocs, doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
-import { HiHome, HiUser, HiTicket } from 'react-icons/hi2'
+import { HiHome, HiUser, HiTicket, HiShoppingBag } from 'react-icons/hi2'
 import { HiArrowUp, HiArrowDown } from 'react-icons/hi2'
 import './QuizListPage.css'
 import { CURRENCY } from '../constants'
@@ -30,6 +30,7 @@ export default function QuizListPage() {
   const [hasFreeTicket, setHasFreeTicket] = useState(false)
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
+  const isAdmin = useAuthStore((s) => s.isAdmin)
 
   useEffect(() => {
     if (!db || !user) return
@@ -95,7 +96,7 @@ export default function QuizListPage() {
       ) : (
         <div className="quiz-list">
           {sorted.map((quiz) => (
-            <QuizCard key={quiz.id} quiz={quiz} onClick={() => navigate(`/quiz/${quiz.id}`)} />
+            <QuizCard key={quiz.id} quiz={quiz} isAdmin={isAdmin} onClick={() => navigate(`/quiz/${quiz.id}`)} />
           ))}
         </div>
       )}
@@ -103,13 +104,14 @@ export default function QuizListPage() {
       <div className="fab-area">
         <button className="fab-icon-btn" onClick={() => navigate('/')}><HiHome /></button>
         <button className="fab-icon-btn" onClick={() => navigate('/my')}><HiUser /></button>
+        <button className="fab-icon-btn" onClick={() => navigate('/exchange')}><HiShoppingBag /></button>
         <button className={`fab-icon-btn ticket ${hasFreeTicket ? 'available' : 'used'}`} disabled><HiTicket /></button>
       </div>
     </div>
   )
 }
 
-function QuizCard({ quiz, onClick }) {
+function QuizCard({ quiz, isAdmin, onClick }) {
   const isSolved = quiz.solvedBy != null
   const challengerTag = getChallengerTag(quiz.challengers)
   const showNew = !isSolved && isNew(quiz.createdAt, quiz.challengers)
@@ -117,12 +119,18 @@ function QuizCard({ quiz, onClick }) {
   return (
     <div className={`quiz-card ${isSolved ? 'solved' : ''}`} onClick={onClick}>
       <div className="quiz-card-left">
-        <div className="quiz-card-bounty">{quiz.bounty.toLocaleString()} {CURRENCY}</div>
+        <div className="quiz-card-top-row">
+          <div className="quiz-card-bounty">{quiz.bounty.toLocaleString()} {CURRENCY}</div>
+          <span className="quiz-card-id">#{quiz.id.slice(0, 6)}</span>
+        </div>
         <div className="quiz-card-tags">
           {showNew && <span className="tag tag-new">NEW</span>}
           {challengerTag && <span className="tag tag-challenger">{challengerTag}</span>}
           {isSolved && <span className="tag tag-solved">종료</span>}
         </div>
+        {isAdmin && quiz.adminNote && (
+          <p className="quiz-card-admin-note">{quiz.adminNote}</p>
+        )}
       </div>
       <span className="quiz-card-arrow">›</span>
     </div>

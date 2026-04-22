@@ -22,6 +22,13 @@ const ChevronLeft = () => (
   </svg>
 )
 
+function HintsPreview({ hints, isHtml }) {
+  if (hints.length === 0) return <p className="preview-empty">힌트 없음</p>
+  return isHtml
+    ? <p className="admin-hints-text" dangerouslySetInnerHTML={{ __html: hints.join('<br/>') }} />
+    : <p className="admin-hints-text">{hints.join('\n')}</p>
+}
+
 export default function AdminPage() {
   const navigate = useNavigate()
   const isAdmin = useAuthStore((s) => s.isAdmin)
@@ -35,8 +42,10 @@ export default function AdminPage() {
 
   const [isHtml, setIsHtml] = useState(false)
   const [hintsText, setHintsText] = useState('')
-  const [showPreview, setShowPreview] = useState(false)
-  const [answerText, setAnswerText] = useState('')
+  const [showHtmlPreview, setShowHtmlPreview] = useState(false)
+  const [showQuizPreview, setShowQuizPreview] = useState(false)
+  const [answers, setAnswers] = useState([''])
+  const [adminNote, setAdminNote] = useState('')
   const [bounty, setBounty] = useState(1000)
   const [customBounty, setCustomBounty] = useState('')
   const [publishAt, setPublishAt] = useState('')
@@ -78,32 +87,40 @@ export default function AdminPage() {
 
   const handleTabChange = (t) => { setTab(t); setShowForm(false); setEditingQuiz(null) }
 
-  const openCreate = () => {
-    setEditingQuiz(null)
+  const resetForm = () => {
     setIsHtml(false)
     setHintsText('')
-    setAnswerText('')
+    setAnswers([''])
+    setAdminNote('')
     setBounty(1000)
     setCustomBounty('')
     setPublishAt('')
-    setShowPreview(false)
-    setShowForm(true)
+    setShowHtmlPreview(false)
+    setShowQuizPreview(false)
   }
+
+  const openCreate = () => { setEditingQuiz(null); resetForm(); setShowForm(true) }
 
   const openEdit = (q) => {
     setEditingQuiz(q)
     setIsHtml(q.isHtml ?? false)
     setHintsText((q.hints ?? []).join('\n'))
-    setAnswerText((q.answers ?? [q.answer]).join(''))
+    setAnswers(q.answers ?? (q.answer ? [q.answer] : ['']))
+    setAdminNote(q.adminNote ?? '')
     const b = q.bounty
     if (BOUNTY_OPTIONS.includes(b)) { setBounty(b); setCustomBounty('') }
     else { setBounty(1000); setCustomBounty(String(b)) }
     setPublishAt(toDatetimeLocal(q.publishAt))
-    setShowPreview(false)
+    setShowHtmlPreview(false)
+    setShowQuizPreview(false)
     setShowForm(true)
   }
 
   const closeForm = () => { setShowForm(false); setEditingQuiz(null) }
+
+  const addAnswer = () => setAnswers((prev) => [...prev, ''])
+  const removeAnswer = (i) => setAnswers((prev) => prev.filter((_, idx) => idx !== i))
+  const updateAnswer = (i, val) => setAnswers((prev) => prev.map((a, idx) => idx === i ? val : a))
 
   const handleAddGiftCard = () => {
     if (!giftCode.trim() || !giftAmount) return
@@ -114,7 +131,7 @@ export default function AdminPage() {
   }
 
   const getHintsArray = () => hintsText.split('\n').map((h) => h.trim()).filter(Boolean).slice(0, 5)
-  const getAnswersArray = () => [answerText.trim()].filter(Boolean)
+  const getAnswersArray = () => answers.map((a) => a.trim()).filter(Boolean)
   const finalBounty = customBounty !== '' ? Number(customBounty) : bounty
 
   const handleSave = async () => {
@@ -132,11 +149,12 @@ export default function AdminPage() {
           hints: validHints,
           isHtml,
           answers: validAnswers,
+          adminNote: adminNote.trim() || null,
           bounty: finalBounty,
           publishAt: publishTimestamp,
         })
         setQuizzes((prev) => prev.map((q) => q.id === editingQuiz.id
-          ? { ...q, hints: validHints, isHtml, answers: validAnswers, bounty: finalBounty, publishAt: publishTimestamp }
+          ? { ...q, hints: validHints, isHtml, answers: validAnswers, adminNote: adminNote.trim() || null, bounty: finalBounty, publishAt: publishTimestamp }
           : q
         ))
         alert('수정되었습니다')
@@ -145,6 +163,7 @@ export default function AdminPage() {
           hints: validHints,
           isHtml,
           answers: validAnswers,
+          adminNote: adminNote.trim() || null,
           bounty: finalBounty,
           challengers: 0,
           activePlayers: 0,
@@ -187,20 +206,21 @@ export default function AdminPage() {
             <button className="back-form-btn" onClick={closeForm}><ChevronLeft /> 목록으로</button>
 
             <div className="mode-toggle">
-              <button className={`mode-btn ${!isHtml ? 'active' : ''}`} onClick={() => { setIsHtml(false); setHintsText(''); setShowPreview(false) }}>글자</button>
-              <button className={`mode-btn ${isHtml ? 'active' : ''}`} onClick={() => { setIsHtml(true); setHintsText(''); setShowPreview(false) }}>HTML</button>
+              <button className={`mode-btn ${!isHtml ? 'active' : ''}`} onClick={() => { setIsHtml(false); setHintsText(''); setShowHtmlPreview(false) }}>글자</button>
+              <button className={`mode-btn ${isHtml ? 'active' : ''}`} onClick={() => { setIsHtml(true); setHintsText(''); setShowHtmlPreview(false) }}>HTML</button>
             </div>
 
+            {/* 힌트 */}
             <section>
               <div className="label-row">
                 <label>힌트 ({hintsArray.length}/5) · 엔터로 구분</label>
                 {isHtml && (
-                  <button className="preview-btn" onClick={() => setShowPreview((v) => !v)}>
-                    {showPreview ? '편집' : '미리보기'}
+                  <button className="preview-btn" onClick={() => setShowHtmlPreview((v) => !v)}>
+                    {showHtmlPreview ? '편집' : 'HTML 미리보기'}
                   </button>
                 )}
               </div>
-              {isHtml && showPreview ? (
+              {isHtml && showHtmlPreview ? (
                 <div className="html-preview-list">
                   {hintsArray.length === 0
                     ? <p className="preview-empty">힌트 없음</p>
@@ -218,11 +238,28 @@ export default function AdminPage() {
               )}
             </section>
 
+            {/* 정답 (복수 가능) */}
             <section>
-              <label>정답</label>
-              <input className="answer-field" value={answerText} onChange={(e) => setAnswerText(e.target.value)} placeholder="정확한 정답 입력" />
+              <div className="label-row">
+                <label>정답</label>
+                <button className="preview-btn" onClick={addAnswer}>+ 추가</button>
+              </div>
+              {answers.map((a, i) => (
+                <div className="hint-row" key={i}>
+                  <input
+                    className="answer-field"
+                    value={a}
+                    onChange={(e) => updateAnswer(i, e.target.value)}
+                    placeholder={i === 0 ? '정확한 정답 입력' : '추가 정답'}
+                  />
+                  {answers.length > 1 && (
+                    <button className="remove-btn" onClick={() => removeAnswer(i)}>×</button>
+                  )}
+                </div>
+              ))}
             </section>
 
+            {/* 현상금 */}
             <section>
               <label>초기 현상금</label>
               <div className="bounty-options">
@@ -239,6 +276,7 @@ export default function AdminPage() {
               )}
             </section>
 
+            {/* 공개 예약 */}
             <section>
               <label>공개 예약 (선택)</label>
               <input
@@ -249,6 +287,36 @@ export default function AdminPage() {
               />
               {!publishAt && <p className="publish-hint">비워두면 즉시 공개</p>}
             </section>
+
+            {/* 관리자 메모 */}
+            <section>
+              <label>관리자 메모 (나만 보임)</label>
+              <input
+                className="answer-field"
+                value={adminNote}
+                onChange={(e) => setAdminNote(e.target.value)}
+                placeholder="출제 의도, 힌트 배경, 메모 등"
+              />
+            </section>
+
+            {/* 퀴즈 미리보기 */}
+            {hintsArray.length > 0 && (
+              <section>
+                <div className="label-row">
+                  <label>퀴즈 미리보기</label>
+                  <button className="preview-btn" onClick={() => setShowQuizPreview((v) => !v)}>
+                    {showQuizPreview ? '접기' : '펼치기'}
+                  </button>
+                </div>
+                {showQuizPreview && (
+                  <div className="quiz-preview-box">
+                    <div className="quiz-preview-bounty">{finalBounty.toLocaleString()} {CURRENCY}</div>
+                    <HintsPreview hints={hintsArray} isHtml={isHtml} />
+                    <div className="quiz-preview-input">정답을 입력하세요</div>
+                  </div>
+                )}
+              </section>
+            )}
 
             <button className="submit-btn" onClick={handleSave} disabled={submitting}>
               {submitting ? '저장 중...' : editingQuiz ? '수정 완료' : '문제 등록'}
@@ -262,19 +330,23 @@ export default function AdminPage() {
             </div>
             {quizzes.map((q) => (
               <div key={q.id} className={`admin-quiz-card ${q.solvedBy ? 'solved' : ''}`}>
-                <div className="admin-hints">
-                  {q.hints.map((h, i) => (
-                    <span key={i}>{q.isHtml ? <span dangerouslySetInnerHTML={{ __html: h }} /> : h}</span>
-                  ))}
-                  {q.isHtml && <span className="html-badge">HTML</span>}
-                  {q.publishAt && !q.solvedBy && <span className="scheduled-badge">{formatPublishAt(q.publishAt)}</span>}
+                <div className="admin-quiz-card-top">
+                  <span className="admin-quiz-id">#{q.id.slice(0, 6)}</span>
+                  {!q.solvedBy && <button className="edit-quiz-btn" onClick={() => openEdit(q)}>수정</button>}
+                  {q.solvedBy && <span className="solved-tag">종료</span>}
                 </div>
+                <div className="admin-quiz-card-hints">
+                  <HintsPreview hints={q.hints ?? []} isHtml={q.isHtml} />
+                  <div className="admin-quiz-badges">
+                    {q.isHtml && <span className="html-badge">HTML</span>}
+                    {q.publishAt && !q.solvedBy && <span className="scheduled-badge">{formatPublishAt(q.publishAt)}</span>}
+                  </div>
+                </div>
+                {q.adminNote && <p className="admin-quiz-note">{q.adminNote}</p>}
                 <div className="admin-quiz-meta">
                   <span>정답: <b>{(q.answers ?? [q.answer]).join(' / ')}</b></span>
                   <span>현상금: <b>{q.bounty.toLocaleString()} {CURRENCY}</b></span>
                   <span>도전자: <b>{q.challengers}명</b></span>
-                  {q.solvedBy && <span className="solved-tag">종료 · {q.solvedBy}</span>}
-                  {!q.solvedBy && <button className="edit-quiz-btn" onClick={() => openEdit(q)}>수정</button>}
                 </div>
               </div>
             ))}
