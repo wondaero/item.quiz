@@ -54,12 +54,16 @@ export default function QuizDetailPage() {
     const unsub = onSnapshot(doc(db, 'quizzes', id), async (snap) => {
       const data = snap.data()
       if (data?.solvedBy && data.solvedBy !== user.uid) {
-        await updateDoc(doc(db, 'quizzes', id), { activePlayers: increment(-1) })
+        const updates = [updateDoc(doc(db, 'quizzes', id), { activePlayers: increment(-1) })]
+        if (ticketType === 'free') {
+          updates.push(updateDoc(doc(db, 'users', user.uid), { freeTicketLastUsed: null }))
+        }
+        await Promise.all(updates)
         setPhase('kicked')
       }
     })
     return () => unsub()
-  }, [phase, id, user.uid])
+  }, [phase, id, user.uid, ticketType])
 
   useEffect(() => {
     if (quiz && quiz.solvedBy != null && phase === 'ticket') setPhase('archive')
@@ -299,7 +303,7 @@ export default function QuizDetailPage() {
         <div className="result-phase">
           <div className="result-icon">🚨</div>
           <h2>다른 사람이 먼저 맞췄어요</h2>
-          <p className="result-sub">참가권은 유지됩니다</p>
+          <p className="result-sub">{ticketType === 'free' ? '무료 참가권이 복구되었습니다' : '참가권은 유지됩니다'}</p>
           <button className="btn-primary" onClick={() => navigate('/quiz')}>목록으로</button>
         </div>
       )}

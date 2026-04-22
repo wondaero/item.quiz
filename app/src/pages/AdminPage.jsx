@@ -22,6 +22,13 @@ const ChevronLeft = () => (
   </svg>
 )
 
+const extractPreviewHint = (hints, isHtml) => {
+  if (!hints.length) return ''
+  const first = hints[0]
+  const stripped = isHtml ? first.replace(/<[^>]+>/g, '').trim() : first
+  return stripped.replace(/^[\d]+[.)]\s*/, '').trim()
+}
+
 function HintsPreview({ hints, isHtml }) {
   if (hints.length === 0) return <p className="preview-empty">힌트 없음</p>
   return isHtml
@@ -45,6 +52,7 @@ export default function AdminPage() {
   const [showHtmlPreview, setShowHtmlPreview] = useState(false)
   const [showQuizPreview, setShowQuizPreview] = useState(false)
   const [answers, setAnswers] = useState([''])
+  const [previewHint, setPreviewHint] = useState('')
   const [adminNote, setAdminNote] = useState('')
   const [bounty, setBounty] = useState(1000)
   const [customBounty, setCustomBounty] = useState('')
@@ -85,12 +93,18 @@ export default function AdminPage() {
   useEffect(() => { if (tab === 'quizzes' && !showForm) fetchQuizzes() }, [tab, showForm, fetchQuizzes])
   useEffect(() => { if (tab === 'dashboard') fetchDashboard() }, [tab, fetchDashboard])
 
+  useEffect(() => {
+    const hints = hintsText.split('\n').map((h) => h.trim()).filter(Boolean).slice(0, 5)
+    setPreviewHint(extractPreviewHint(hints, isHtml))
+  }, [hintsText, isHtml])
+
   const handleTabChange = (t) => { setTab(t); setShowForm(false); setEditingQuiz(null) }
 
   const resetForm = () => {
     setIsHtml(false)
     setHintsText('')
     setAnswers([''])
+    setPreviewHint('')
     setAdminNote('')
     setBounty(1000)
     setCustomBounty('')
@@ -106,6 +120,7 @@ export default function AdminPage() {
     setIsHtml(q.isHtml ?? false)
     setHintsText((q.hints ?? []).join('\n'))
     setAnswers(q.answers ?? (q.answer ? [q.answer] : ['']))
+    setPreviewHint(q.previewHint ?? extractPreviewHint(q.hints ?? [], q.isHtml ?? false))
     setAdminNote(q.adminNote ?? '')
     const b = q.bounty
     if (BOUNTY_OPTIONS.includes(b)) { setBounty(b); setCustomBounty('') }
@@ -149,12 +164,13 @@ export default function AdminPage() {
           hints: validHints,
           isHtml,
           answers: validAnswers,
+          previewHint: previewHint.trim() || null,
           adminNote: adminNote.trim() || null,
           bounty: finalBounty,
           publishAt: publishTimestamp,
         })
         setQuizzes((prev) => prev.map((q) => q.id === editingQuiz.id
-          ? { ...q, hints: validHints, isHtml, answers: validAnswers, adminNote: adminNote.trim() || null, bounty: finalBounty, publishAt: publishTimestamp }
+          ? { ...q, hints: validHints, isHtml, answers: validAnswers, previewHint: previewHint.trim() || null, adminNote: adminNote.trim() || null, bounty: finalBounty, publishAt: publishTimestamp }
           : q
         ))
         alert('수정되었습니다')
@@ -163,6 +179,7 @@ export default function AdminPage() {
           hints: validHints,
           isHtml,
           answers: validAnswers,
+          previewHint: previewHint.trim() || null,
           adminNote: adminNote.trim() || null,
           bounty: finalBounty,
           challengers: 0,
@@ -236,6 +253,18 @@ export default function AdminPage() {
                   rows={6}
                 />
               )}
+            </section>
+
+            {/* 카드 미리보기 힌트 */}
+            <section>
+              <label>카드 힌트 (자동 추출 · 수정 가능)</label>
+              <input
+                className="answer-field"
+                value={previewHint}
+                onChange={(e) => setPreviewHint(e.target.value)}
+                placeholder="힌트를 입력하면 자동 추출됩니다"
+              />
+              <p className="publish-hint">퀴즈 목록 카드에 표시되는 첫 힌트</p>
             </section>
 
             {/* 정답 (복수 가능) */}

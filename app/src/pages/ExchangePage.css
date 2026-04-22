@@ -66,29 +66,6 @@
   color: var(--text-sub);
 }
 
-.input-wrap {
-  display: flex;
-  align-items: center;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
-  gap: 8px;
-}
-
-.input-wrap input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  color: var(--text);
-  font-size: 1rem;
-  outline: none;
-}
-
-.input-unit {
-  color: var(--text-sub);
-}
-
 .exchange-preview {
   text-align: center;
   color: var(--primary);
@@ -107,18 +84,19 @@
 }
 
 .amount-options {
-  display: flex;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 .amount-opt {
-  flex: 1;
-  padding: 12px 0;
+  padding: 16px 0;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   color: var(--text);
-  font-size: 0.9rem;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -127,6 +105,11 @@
   border-color: var(--primary);
   color: var(--btn-text);
   font-weight: 700;
+}
+
+.amount-opt.disabled {
+  opacity: 0.3;
+  cursor: default;
 }
 
 .exchange-success {

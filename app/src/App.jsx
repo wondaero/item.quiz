@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import useAuthStore from './store/useAuthStore'
 import { DEV_ACCESS } from './constants'
@@ -18,6 +18,11 @@ function PrivateRoute({ children }) {
 }
 
 export default function App() {
+  useEffect(() => {
+    const ref = new URLSearchParams(window.location.search).get('ref')
+    if (ref) localStorage.setItem('qwiz_ref', ref)
+  }, [])
+
   return (
     <BrowserRouter>
       <Suspense fallback={null}>

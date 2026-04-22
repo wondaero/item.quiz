@@ -44,6 +44,7 @@ export default function LoginPage() {
       const userRef = doc(db, 'users', uid)
       const snap = await getDoc(userRef)
       if (!snap.exists()) {
+        const ref = localStorage.getItem('qwiz_ref') ?? null
         await setDoc(userRef, {
           kakaoId,
           nickname,
@@ -51,10 +52,11 @@ export default function LoginPage() {
           points: SIGNUP_REWARD,
           attempts: 0,
           freeTicketLastUsed: null,
-          referredBy: null,
+          referredBy: ref,
           joinedAt: Timestamp.now(),
           newbieBonusClaimed: false,
         })
+        if (ref) localStorage.removeItem('qwiz_ref')
       }
 
       setUser({ uid, kakaoId, nickname, profileImage })

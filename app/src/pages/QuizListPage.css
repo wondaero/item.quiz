@@ -121,6 +121,12 @@
   font-family: monospace;
 }
 
+.quiz-card-preview-hint {
+  font-size: 0.95rem;
+  color: var(--text-sub);
+  margin: 0;
+}
+
 .quiz-card-admin-note {
   font-size: 0.78rem;
   color: var(--primary);

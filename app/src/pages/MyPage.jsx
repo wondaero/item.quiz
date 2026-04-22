@@ -6,6 +6,10 @@ import useAuthStore from '../store/useAuthStore'
 import { CURRENCY } from '../constants'
 import './MyPage.css'
 
+const initKakao = () => {
+  if (!window.Kakao.isInitialized()) window.Kakao.init(import.meta.env.VITE_KAKAO_JS_KEY)
+}
+
 export default function MyPage() {
   const { user, isAdmin, logout } = useAuthStore()
   const navigate = useNavigate()
@@ -26,6 +30,21 @@ export default function MyPage() {
   const handleLogout = () => {
     logout()
     navigate('/')
+  }
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(user.kakaoId)
+    alert('추천 코드가 복사되었습니다')
+  }
+
+  const handleKakaoShare = () => {
+    initKakao()
+    const shareUrl = `${window.location.origin}?ref=${user.kakaoId}`
+    window.Kakao.Share.sendDefault({
+      objectType: 'text',
+      text: `[Qwiz] 친구가 초대했어요!\n연상 퀴즈로 현상금에 도전해보세요 🎯\n가입하면 500 ${CURRENCY} 지급!`,
+      link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
+    })
   }
 
   return (
@@ -54,6 +73,16 @@ export default function MyPage() {
           <span className="stat-label">무료 참가권</span>
           <span className="ticket-status">{hasFreeTicket ? '사용 가능' : '내일 갱신'}</span>
         </div>
+      </div>
+
+      <div className="referral-section">
+        <p className="referral-label">내 추천 코드</p>
+        <div className="referral-row">
+          <span className="referral-code">{user?.kakaoId}</span>
+          <button className="referral-copy-btn" onClick={handleCopyCode}>복사</button>
+        </div>
+        <button className="referral-share-btn" onClick={handleKakaoShare}>카카오로 친구 초대</button>
+        <p className="referral-desc">친구가 가입하면 첫 정답 시 {CURRENCY} 보너스 · 이후 영구 수익 1% 쉐어</p>
       </div>
 
       <div className="my-actions">
