@@ -14,12 +14,14 @@ export default function MyPage() {
   const { user, isAdmin, logout } = useAuthStore()
   const navigate = useNavigate()
   const [userData, setUserData] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!user || !db) return
     const fetchUser = async () => {
       const snap = await getDoc(doc(db, 'users', user.uid))
       if (snap.exists()) setUserData(snap.data())
+      setLoading(false)
     }
     fetchUser()
   }, [user])
@@ -46,6 +48,8 @@ export default function MyPage() {
       link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
     })
   }
+
+  if (loading) return <div className="page-loading"><div className="spinner" /></div>
 
   const level = calcLevel(userData?.attempts ?? 0, userData?.solvedCount ?? 0)
   const nextThreshold = LEVEL_THRESHOLDS.find(t => t.level === level + 1)

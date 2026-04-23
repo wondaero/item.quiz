@@ -213,6 +213,12 @@
   color: var(--text-muted);
 }
 
+.list-loading {
+  display: flex;
+  justify-content: center;
+  padding: 60px 0;
+}
+
 .loading, .empty {
   text-align: center;
   color: var(--text-muted);

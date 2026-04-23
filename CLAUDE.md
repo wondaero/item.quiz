@@ -21,6 +21,8 @@
 - 현상금은 광고 참가권 오답 1회당 +1P 누적
 - **정답자 나오는 순간 그 문제 종료 → 나머지 도전자 강제 아웃**
 - 포인트 1:1 신세계상품권 환전 (최소 20,000P)
+- **미풀린 문제는 만료 없이 영구 유지** — 현상금 계속 누적, 구색 유지 목적
+- **오답 후 재도전 허용** — 광고 한 번 더 보고 재도전, 현상금 +1P 올라가므로 오히려 권장
 
 ### 퀴즈 난이도 예시
 힌트: `고라니` `모음` `비` → 정답: `소나기`
@@ -79,7 +81,9 @@
   - MyPage에 현재 레벨 뱃지 + 보너스% + 다음 레벨 조건 표시
 - **AdminPage 개선**: 퀴즈 카드에 출제일 표시 (`월/일 시:분` 형태)
 - **무료 참가권 kicked 복구**: 다른 사람이 먼저 맞춰서 강제 아웃 시 무료권 자동 복구
-- **vercel.json**: SPA 새로고침 404 방지 rewrites 설정
+- **vercel.json**: SPA 새로고침 404 방지 rewrites 설정 (`app/vercel.json` — Vercel Root Directory가 app/인 경우)
+- **전체 페이지 sticky 헤더**: QuizListPage, MyPage, ExchangePage, AdminPage, QuizDetailPage(play) — `position: sticky; top: 0`, 키보드 대응
+- **로딩 상태**: 전역 `.spinner` 추가, QuizListPage/QuizDetailPage/MyPage/ExchangePage 페이지 로딩 + 제출/참가권 선택 버튼 로딩
 
 ### DEV_ACCESS (개발용 우회)
 `constants.js`의 DEV_ACCESS — `import.meta.env.DEV` 기반, 빌드 시 자동 제거됨
@@ -221,7 +225,11 @@ firebase.json
 - [ ] AdminPage 환전 신청 — Firebase 실 연결 (목업 제거됨, 빈 배열 상태)
 - [ ] ExchangePage(상점) — 현재 환전 신청만 있음, 추후 기능 확장 가능
 - [ ] 환전 신청 재고 부족 시 관리자 알림 (adminAlerts + onSnapshot)
-- [ ] Cloud Functions: 카카오 토큰 → Firebase Custom Token (보안 이슈 3개 한 번에 해결)
+- [ ] Cloud Functions (Blaze 업그레이드 후 한 번에 처리):
+  - 카카오 토큰 → Firebase Custom Token (보안 이슈 3개 해결)
+  - 환전 신청 시 관리자 FCM 푸시 알림 (FCM 자체는 무료, 트리거용으로 Functions 필요)
+  - 새 퀴즈 등록 시 전체 유저 FCM 푸시 알림 (리텐션 핵심, FCM 무제한 무료)
+  - activePlayers onDisconnect 처리
 - [ ] IntroPage 배경 이미지 교체 (현재 dark 네온 이미지가 warm 테마와 안 어울림)
 - [ ] /settings 페이지 구현 (라우트만 있음)
 - [ ] AdMob 보상형 광고 연동 (handleAdWatched에 TODO, Android 빌드 후)

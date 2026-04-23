@@ -14,12 +14,15 @@ export default function ExchangePage() {
   const [userData, setUserData] = useState(null)
   const [amount, setAmount] = useState(null)
   const [submitted, setSubmitted] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (!user || !db) return
     const fetch = async () => {
       const snap = await getDoc(doc(db, 'users', user.uid))
       if (snap.exists()) setUserData(snap.data())
+      setLoading(false)
     }
     fetch()
   }, [user])
@@ -27,6 +30,7 @@ export default function ExchangePage() {
   const handleExchange = async () => {
     if (!amount) { alert('상품권을 선택하세요'); return }
     if (amount > (userData?.points ?? 0)) { alert('보유 포인트가 부족합니다'); return }
+    setSubmitting(true)
     if (db) {
       await addDoc(collection(db, 'exchanges'), {
         uid: user.uid,
@@ -37,6 +41,8 @@ export default function ExchangePage() {
     }
     setSubmitted(true)
   }
+
+  if (loading) return <div className="page-loading"><div className="spinner" /></div>
 
   return (
     <div className="exchange-page">
@@ -81,7 +87,7 @@ export default function ExchangePage() {
 
           {amount && <p className="exchange-preview">{amount.toLocaleString()} {CURRENCY} → {amount.toLocaleString()}원 상품권</p>}
 
-          <button className="btn-primary" onClick={handleExchange}>환전 신청</button>
+          <button className="btn-primary" onClick={handleExchange} disabled={submitting}>{submitting ? '신청 중...' : '환전 신청'}</button>
         </div>
       )}
     </div>

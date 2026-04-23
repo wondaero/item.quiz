@@ -89,7 +89,7 @@ export default function QuizListPage() {
       </header>
 
       {loading ? (
-        <p className="loading">불러오는 중...</p>
+        <div className="list-loading"><div className="spinner" /></div>
       ) : sorted.length === 0 ? (
         <p className="empty">등록된 퀴즈가 없습니다</p>
       ) : (

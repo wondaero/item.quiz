@@ -34,6 +34,8 @@ export default function QuizDetailPage() {
   const [leveledUp, setLeveledUp] = useState(null)
   const [lockedBounty, setLockedBounty] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [selecting, setSelecting] = useState(false)
   const [showQuitConfirm, setShowQuitConfirm] = useState(false)
 
   useEffect(() => {
@@ -81,17 +83,29 @@ export default function QuizDetailPage() {
   }, [id, quiz])
 
   const handleSelectPaid = async () => {
-    setTicketType('paid')
-    if (DEV_ACCESS.전체접근 || DEV_ACCESS.광고) {
-      await enterPlay('paid')
-    } else {
-      setPhase('ad')
+    if (selecting) return
+    setSelecting(true)
+    try {
+      setTicketType('paid')
+      if (DEV_ACCESS.전체접근 || DEV_ACCESS.광고) {
+        await enterPlay('paid')
+      } else {
+        setPhase('ad')
+      }
+    } finally {
+      setSelecting(false)
     }
   }
 
   const handleSelectFree = async () => {
-    if (db) await updateDoc(doc(db, 'users', user.uid), { freeTicketLastUsed: getTodayString() })
-    await enterPlay('free')
+    if (selecting) return
+    setSelecting(true)
+    try {
+      if (db) await updateDoc(doc(db, 'users', user.uid), { freeTicketLastUsed: getTodayString() })
+      await enterPlay('free')
+    } finally {
+      setSelecting(false)
+    }
   }
 
   const handleAdWatched = async () => {
@@ -105,7 +119,8 @@ export default function QuizDetailPage() {
   }
 
   const handleSubmit = async () => {
-    if (!answer.trim()) return
+    if (!answer.trim() || submitting) return
+    setSubmitting(true)
 
     const acceptedAnswers = quiz.answers ?? [quiz.answer]
     const isCorrect = acceptedAnswers.some((a) => normalize(a) === normalize(answer))
@@ -175,9 +190,10 @@ export default function QuizDetailPage() {
 
     setResult(isCorrect ? 'correct' : 'wrong')
     setPhase('result')
+    setSubmitting(false)
   }
 
-  if (loading) return <div className="quiz-detail-loading">불러오는 중...</div>
+  if (loading) return <div className="page-loading"><div className="spinner" /></div>
   if (!quiz) return <div className="quiz-detail-loading">퀴즈를 찾을 수 없습니다</div>
 
   return (
@@ -188,14 +204,14 @@ export default function QuizDetailPage() {
           <h2>참가권 선택</h2>
           <p className="ticket-desc">도전 방식을 선택하세요</p>
 
-          <div className="ticket-card paid" onClick={handleSelectPaid}>
+          <div className={`ticket-card paid ${selecting ? 'used' : ''}`} onClick={!selecting ? handleSelectPaid : undefined}>
             <div className="ticket-title">광고 참가권</div>
             <ul className="ticket-benefits">
               <li>현상금 누적에 기여 (+1P)</li>
               <li>틀려도 1 {CURRENCY} 환불</li>
               <li>맞추면 현상금 전액 획득</li>
             </ul>
-            <div className="ticket-action">광고 보고 도전</div>
+            <div className="ticket-action">{selecting ? '입장 중...' : '광고 보고 도전'}</div>
           </div>
 
           <div className={`ticket-card free ${!hasFreeTicketToday ? 'used' : ''}`}
@@ -265,7 +281,7 @@ export default function QuizDetailPage() {
                     placeholder="정답을 입력하세요"
                     autoFocus
                   />
-                  <button className="btn-primary" onClick={handleSubmit}>제출</button>
+                  <button className="btn-primary" onClick={handleSubmit} disabled={submitting}>{submitting ? '처리 중...' : '제출'}</button>
                 </div>
                 <p className="notice">* 정답은 정확히 입력해야 합니다 (띄어쓰기 포함)</p>
               </>
