@@ -35,13 +35,13 @@ export default function MyPage() {
   }
 
   const handleCopyCode = () => {
-    navigator.clipboard.writeText(user.kakaoId)
+    navigator.clipboard.writeText(user.uid)
     alert('추천 코드가 복사되었습니다')
   }
 
   const handleKakaoShare = () => {
     initKakao()
-    const shareUrl = `${window.location.origin}?ref=${user.kakaoId}`
+    const shareUrl = `${window.location.origin}?ref=${user.uid}`
     window.Kakao.Share.sendDefault({
       objectType: 'text',
       text: `[Qwiz] 친구가 초대했어요!\n연상 퀴즈로 현상금에 도전해보세요 🎯\n가입하면 500 ${CURRENCY} 지급!`,
@@ -90,7 +90,7 @@ export default function MyPage() {
       <div className="referral-section">
         <p className="referral-label">내 추천 코드</p>
         <div className="referral-row">
-          <span className="referral-code">{user?.kakaoId}</span>
+          <span className="referral-code">{user?.uid}</span>
           <button className="referral-copy-btn" onClick={handleCopyCode}>복사</button>
         </div>
         <button className="referral-share-btn" onClick={handleKakaoShare}>카카오로 친구 초대</button>

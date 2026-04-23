@@ -1,12 +1,14 @@
 .intro-page {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-end;
   align-items: center;
   height: 100vh;
-  gap: 48px;
+  padding-bottom: 20px;
+
   background: var(--bg) center/cover no-repeat;
   color: var(--text);
+  box-sizing: border-box;
 }
 
 .intro-logo {

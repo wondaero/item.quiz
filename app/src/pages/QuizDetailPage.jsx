@@ -1,13 +1,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { doc, getDoc, updateDoc, increment, arrayUnion, Timestamp, onSnapshot, runTransaction } from 'firebase/firestore'
-import { db } from '../firebase/config'
+import { doc, getDoc, updateDoc, increment, onSnapshot } from 'firebase/firestore'
+import { httpsCallable } from 'firebase/functions'
+import { db, functions } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
 import './QuizDetailPage.css'
-import { CURRENCY, DEV_ACCESS, NEWBIE_FIRST_SOLVE, NEWBIE_PERIOD_DAYS, REFERRAL_REWARD, REFERRAL_SHARE_RATE, getLevelBonus, calcLevel } from '../constants'
+import { CURRENCY, DEV_ACCESS } from '../constants'
 
 const getTodayString = () => new Date().toISOString().slice(0, 10)
-const normalize = (s) => s.replace(/\s/g, '')
 
 function HintsDisplay({ hints, isHtml }) {
   return (
@@ -122,75 +122,27 @@ export default function QuizDetailPage() {
     if (!answer.trim() || submitting) return
     setSubmitting(true)
 
-    const acceptedAnswers = quiz.answers ?? [quiz.answer]
-    const isCorrect = acceptedAnswers.some((a) => normalize(a) === normalize(answer))
+    try {
+      const submitAnswer = httpsCallable(functions, 'submitAnswer')
+      const { data } = await submitAnswer({ quizId: id, answer, ticketType })
 
-    if (db) {
-      const quizRef = doc(db, 'quizzes', id)
-      const userRef = doc(db, 'users', user.uid)
-
-      if (isCorrect) {
-        try {
-          await runTransaction(db, async (transaction) => {
-            const [quizDoc, userDoc] = await Promise.all([
-              transaction.get(quizRef),
-              transaction.get(userRef),
-            ])
-
-            if (quizDoc.data()?.solvedBy) throw new Error('ALREADY_SOLVED')
-
-            const uData = userDoc.data()
-            const now = Timestamp.now()
-
-            const oldLevel = calcLevel(uData.attempts ?? 0, uData.solvedCount ?? 0)
-            const newLevel = calcLevel(uData.attempts ?? 0, (uData.solvedCount ?? 0) + 1)
-            const levelBonus = getLevelBonus(uData.attempts ?? 0, uData.solvedCount ?? 0)
-            let totalGain = lockedBounty + Math.floor(lockedBounty * levelBonus)
-            if (newLevel > oldLevel) setLeveledUp(newLevel)
-            let claimNewbie = false
-            if (!uData.newbieBonusClaimed && uData.joinedAt) {
-              const daysSinceJoin = (now.toMillis() - uData.joinedAt.toMillis()) / 86400000
-              if (daysSinceJoin <= NEWBIE_PERIOD_DAYS) {
-                totalGain += NEWBIE_FIRST_SOLVE
-                claimNewbie = true
-              }
-            }
-
-            transaction.update(quizRef, { solvedBy: user.uid, solvedAt: now, activePlayers: increment(-1) })
-            transaction.update(userRef, {
-              points: increment(totalGain),
-              solvedCount: increment(1),
-              ...(claimNewbie && { newbieBonusClaimed: true }),
-            })
-
-            if (uData.referredBy) {
-              const referrerRef = doc(db, 'users', uData.referredBy)
-              let referrerGain = Math.floor(lockedBounty * REFERRAL_SHARE_RATE)
-              if (claimNewbie) referrerGain += REFERRAL_REWARD
-              if (referrerGain > 0) transaction.update(referrerRef, { points: increment(referrerGain) })
-            }
-          })
-        } catch (e) {
-          if (e.message === 'ALREADY_SOLVED') { setPhase('kicked'); return }
-          console.error('정답 처리 오류', e)
-          return
-        }
-      } else if (ticketType === 'paid') {
-        await Promise.all([
-          updateDoc(quizRef, { bounty: increment(1), challengers: increment(1), wrongAnswers: arrayUnion(user.uid), activePlayers: increment(-1) }),
-          updateDoc(userRef, { points: increment(1), attempts: increment(1) }),
-        ])
-      } else {
-        await Promise.all([
-          updateDoc(quizRef, { challengers: increment(1), activePlayers: increment(-1) }),
-          updateDoc(userRef, { attempts: increment(1) }),
-        ])
+      if (data.result === 'already_solved') {
+        setPhase('kicked')
+        return
       }
-    }
 
-    setResult(isCorrect ? 'correct' : 'wrong')
-    setPhase('result')
-    setSubmitting(false)
+      if (data.result === 'correct') {
+        setLockedBounty(data.gain)
+        if (data.leveledUpTo) setLeveledUp(data.leveledUpTo)
+      }
+
+      setResult(data.result)
+      setPhase('result')
+    } catch (e) {
+      console.error('제출 오류', e)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   if (loading) return <div className="page-loading"><div className="spinner" /></div>

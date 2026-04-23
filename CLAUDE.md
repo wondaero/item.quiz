@@ -84,6 +84,12 @@
 - **vercel.json**: SPA 새로고침 404 방지 rewrites 설정 (`app/vercel.json` — Vercel Root Directory가 app/인 경우)
 - **전체 페이지 sticky 헤더**: QuizListPage, MyPage, ExchangePage, AdminPage, QuizDetailPage(play) — `position: sticky; top: 0`, 키보드 대응
 - **로딩 상태**: 전역 `.spinner` 추가, QuizListPage/QuizDetailPage/MyPage/ExchangePage 페이지 로딩 + 제출/참가권 선택 버튼 로딩
+- **Cloud Functions 배포**: `functions/index.js` `submitAnswer` 함수 배포 완료
+  - 정답 검증 서버사이드 처리 (answers 필드 클라이언트 노출 차단)
+  - 레벨 보너스, 신규 보너스, 추천인 수익쉐어 서버에서 원자적 처리
+  - Cloud Run 공개 액세스 허용 설정 완료
+- **firebase/config.js**: `getFunctions` 추가, `asia-northeast3` 리전 설정
+- **QuizDetailPage**: `handleSubmit` → `httpsCallable(functions, 'submitAnswer')` 호출로 교체 (클라이언트 정답 검증 제거)
 
 ### DEV_ACCESS (개발용 우회)
 `constants.js`의 DEV_ACCESS — `import.meta.env.DEV` 기반, 빌드 시 자동 제거됨
@@ -95,7 +101,8 @@
 - **Frontend**: React + Vite
 - **App 래핑**: Capacitor (Android/iOS)
 - **DB**: Firebase Firestore
-- **Auth**: 카카오 로그인만 (Firebase Auth 미연동 — request.auth 항상 null)
+- **Auth**: 카카오 로그인 + Firebase 익명 인증 (`signInAnonymously`) — uid는 Firebase uid 사용
+- **Cloud Functions**: `functions/index.js` — `submitAnswer` 배포 완료 (asia-northeast3)
 - **상태관리**: Zustand (localStorage 지속)
 - **라우팅**: React Router DOM
 - **광고**: AdMob (보상형, 추후 연동)
@@ -124,6 +131,9 @@ app/
 │   ├── constants.js                    # 보상 수치, DEV_ACCESS
 │   └── main.jsx                        # 테마 import 위치
 ├── .env                                # 실 키값 입력 완료
+functions/
+├── index.js                            # submitAnswer Cloud Function (배포 완료)
+├── package.json
 firestore.rules                         # 보안 규칙 (배포 필요)
 firebase.json
 ```
@@ -186,38 +196,34 @@ firebase.json
 - 첫 정답 보너스: NEWBIE_FIRST_SOLVE = 500 QW (가입 후 NEWBIE_PERIOD_DAYS=7일 내)
 - 추천인 보너스: REFERRAL_REWARD = 500 QW (친구가 7일 내 첫 정답 시)
 - 추천인 영구 수익쉐어: REFERRAL_SHARE_RATE = 0.01 (1%)
-- 모두 handleSubmit의 runTransaction 안에서 원자적으로 처리
+- 모두 `submitAnswer` Cloud Function의 runTransaction 안에서 원자적으로 처리
 
 ---
 
-## 보안 이슈 (Cloud Functions 붙이기 전까지 미해결)
+## 보안 이슈
 
-### 1. Admin ID 취득
+### 1. Admin ID 취득 (미해결)
 - `localStorage`에 `{uid: '4833965068'}` 직접 입력하면 Admin으로 인식됨
-- `VITE_ADMIN_UID` 값이 빌드된 JS 번들에 노출되어 uid 값 확인 가능
-- **피해 범위**: Admin 페이지 접근, 퀴즈 스팸 등록
-- **해결책**: Cloud Functions로 카카오 토큰 검증 → Firebase Custom Token 발급 → Firestore 규칙에서 `request.auth.uid` 서버사이드 검증
+- **해결책**: 카카오 토큰 → Firebase Custom Token 발급 함수 추가
 
-### 2. 정답 유출
-- QuizDetailPage에서 퀴즈 문서 전체를 fetch하므로 `answers` 필드가 클라이언트에 노출됨
-- 개발자도구 Network 탭 또는 Firestore 직접 접근으로 정답 확인 가능
-- **해결책**: Cloud Functions에서 정답 검증 (클라이언트에 answers 필드 내려주지 않음)
+### 2. 정답 유출 (부분 해결)
+- ~~QuizDetailPage에서 answers 필드 클라이언트 노출~~ → Cloud Functions 서버 검증으로 이동
+- 단, Firestore 규칙에서 `answers` 필드 읽기 차단은 아직 미적용
 
-### 3. 포인트 직접 조작
-- Firestore 규칙이 Firebase Auth 미연동으로 인해 서버사이드 uid 검증 불가
-- 클라이언트에서 Firestore SDK로 직접 points 필드 조작 가능
-- **해결책**: Cloud Functions에서 정답 처리 및 포인트 지급 (클라이언트는 읽기만)
+### 3. 포인트 직접 조작 (부분 해결)
+- 정답 처리/포인트 지급은 Cloud Functions로 이동
+- 단, Firebase Anonymous Auth 토큰이 Functions에 전달 안 되는 이슈 미해결 (다음 작업)
 
-> 세 가지 모두 **Cloud Functions + Firebase Custom Token** 도입으로 해결됨
-> 유저 생기기 전에 반드시 처리할 것
+> **다음 세션 최우선 작업**: `request.auth` null 이슈 해결
+> — App.jsx에서 `onAuthStateChanged` 리스너로 Firebase Auth 세션 복구 로직 추가 필요
 
 ---
 
 ## 남은 작업
 
-### 급한 것 (너가 해야 할 것)
-- [ ] Vercel 배포 + 카카오 도메인 등록 (외부 접근용, 모바일 테스트 위해)
-- [ ] Firestore 보안 규칙 배포: `firebase deploy --only firestore:rules` (Firebase CLI 설치 필요)
+### 급한 것 (다음 세션)
+- [ ] **`request.auth` null 이슈 해결** — App.jsx `onAuthStateChanged`로 Firebase Auth 세션 복구, 기존 유저 재로그인 처리
+- [ ] Firestore 보안 규칙 배포: `firebase deploy --only firestore:rules`
 - [ ] 카카오 개발자 콘솔 → 동의항목 → 닉네임 **필수동의** 설정 (현재 "익명"으로 뜸)
 
 ### 나랑 같이 해야 할 것
@@ -225,12 +231,11 @@ firebase.json
 - [ ] AdminPage 환전 신청 — Firebase 실 연결 (목업 제거됨, 빈 배열 상태)
 - [ ] ExchangePage(상점) — 현재 환전 신청만 있음, 추후 기능 확장 가능
 - [ ] 환전 신청 재고 부족 시 관리자 알림 (adminAlerts + onSnapshot)
-- [ ] Cloud Functions (Blaze 업그레이드 후 한 번에 처리):
-  - 카카오 토큰 → Firebase Custom Token (보안 이슈 3개 해결)
-  - 환전 신청 시 관리자 FCM 푸시 알림 (FCM 자체는 무료, 트리거용으로 Functions 필요)
-  - 새 퀴즈 등록 시 전체 유저 FCM 푸시 알림 (리텐션 핵심, FCM 무제한 무료)
+- [ ] Cloud Functions 추가:
+  - 카카오 토큰 → Firebase Custom Token (Admin 보안 이슈 해결)
+  - 환전 신청 시 관리자 FCM 푸시 알림
+  - 새 퀴즈 등록 시 전체 유저 FCM 푸시 알림 (리텐션 핵심)
   - activePlayers onDisconnect 처리
-- [ ] IntroPage 배경 이미지 교체 (현재 dark 네온 이미지가 warm 테마와 안 어울림)
 - [ ] /settings 페이지 구현 (라우트만 있음)
 - [ ] AdMob 보상형 광고 연동 (handleAdWatched에 TODO, Android 빌드 후)
 - [ ] FCM 푸시알림

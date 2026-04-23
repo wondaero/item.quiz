@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { doc, getDoc, addDoc, collection, Timestamp } from 'firebase/firestore'
+import { doc, getDoc, addDoc, updateDoc, collection, Timestamp, increment, runTransaction } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
 import { CURRENCY } from '../constants'
@@ -31,15 +31,30 @@ export default function ExchangePage() {
     if (!amount) { alert('상품권을 선택하세요'); return }
     if (amount > (userData?.points ?? 0)) { alert('보유 포인트가 부족합니다'); return }
     setSubmitting(true)
-    if (db) {
-      await addDoc(collection(db, 'exchanges'), {
-        uid: user.uid,
-        amount,
-        status: 'pending',
-        requestedAt: Timestamp.now(),
+    try {
+      await runTransaction(db, async (transaction) => {
+        const userRef = doc(db, 'users', user.uid)
+        const userSnap = await transaction.get(userRef)
+        const currentPoints = userSnap.data()?.points ?? 0
+        if (amount > currentPoints) throw new Error('INSUFFICIENT_POINTS')
+
+        const exchangeRef = doc(collection(db, 'exchanges'))
+        transaction.set(exchangeRef, {
+          uid: user.uid,
+          nickname: user.nickname ?? '유저',
+          amount,
+          status: 'pending',
+          requestedAt: Timestamp.now(),
+        })
+        transaction.update(userRef, { points: increment(-amount) })
       })
+      setSubmitted(true)
+    } catch (e) {
+      if (e.message === 'INSUFFICIENT_POINTS') alert('포인트가 부족합니다')
+      else console.error('환전 신청 오류', e)
+    } finally {
+      setSubmitting(false)
     }
-    setSubmitted(true)
   }
 
   if (loading) return <div className="page-loading"><div className="spinner" /></div>
