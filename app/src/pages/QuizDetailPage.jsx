@@ -181,7 +181,7 @@ export default function QuizDetailPage() {
   if (!quiz) return <div className="quiz-detail-loading">퀴즈를 찾을 수 없습니다</div>
 
   return (
-    <div className="quiz-detail-page">
+    <div className={`quiz-detail-page${phase === 'play' ? ' play-mode' : ''}`}>
 
       {phase === 'ticket' && (
         <div className="ticket-phase">
@@ -231,41 +231,47 @@ export default function QuizDetailPage() {
       )}
 
       {phase === 'play' && (
-        <div className="play-phase">
-          <div className="bounty-display">{lockedBounty.toLocaleString()} {CURRENCY}</div>
-          <div className="ticket-type-badge">{ticketType === 'paid' ? '광고 참가권' : '무료 참가권'}</div>
-          <HintsDisplay hints={quiz.hints} isHtml={quiz.isHtml} />
-          <button className="play-back-btn" onClick={() => setShowQuitConfirm(true)}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
-          {showQuitConfirm ? (
-            <div className="quit-confirm">
-              <p>정말 포기할까요?</p>
-              <p className="notice">참가권은 환불되지 않아요</p>
-              <div className="quit-confirm-btns">
-                <button className="btn-primary" onClick={handleQuit}>포기</button>
-                <button className="btn-ghost" onClick={() => setShowQuitConfirm(false)}>계속 도전</button>
-              </div>
+        <>
+          <div className="quiz-play-header">
+            <button className="play-back-btn" onClick={() => setShowQuitConfirm(true)}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+            <div className="play-header-right">
+              <span className="play-header-bounty">{lockedBounty.toLocaleString()} {CURRENCY}</span>
+              <span className="ticket-type-badge">{ticketType === 'paid' ? '광고' : '무료'}</span>
             </div>
-          ) : (
-            <>
-              <div className="answer-input-wrap">
-                <input
-                  className="answer-input"
-                  value={answer}
-                  onChange={(e) => setAnswer(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                  placeholder="정답을 입력하세요"
-                  autoFocus
-                />
-                <button className="btn-primary" onClick={handleSubmit}>제출</button>
+          </div>
+          <div className="play-phase">
+            <HintsDisplay hints={quiz.hints} isHtml={quiz.isHtml} />
+            {showQuitConfirm ? (
+              <div className="quit-confirm">
+                <p>정말 포기할까요?</p>
+                <p className="notice">참가권은 환불되지 않아요</p>
+                <div className="quit-confirm-btns">
+                  <button className="btn-primary" onClick={handleQuit}>포기</button>
+                  <button className="btn-ghost" onClick={() => setShowQuitConfirm(false)}>계속 도전</button>
+                </div>
               </div>
-              <p className="notice">* 정답은 정확히 입력해야 합니다 (띄어쓰기 포함)</p>
-            </>
-          )}
-        </div>
+            ) : (
+              <>
+                <div className="answer-input-wrap">
+                  <input
+                    className="answer-input"
+                    value={answer}
+                    onChange={(e) => setAnswer(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+                    placeholder="정답을 입력하세요"
+                    autoFocus
+                  />
+                  <button className="btn-primary" onClick={handleSubmit}>제출</button>
+                </div>
+                <p className="notice">* 정답은 정확히 입력해야 합니다 (띄어쓰기 포함)</p>
+              </>
+            )}
+          </div>
+        </>
       )}
 
       {phase === 'result' && (
