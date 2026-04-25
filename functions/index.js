@@ -1,7 +1,9 @@
 const { setGlobalOptions } = require("firebase-functions");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const { getAuth } = require("firebase-admin/auth");
 const { initializeApp } = require("firebase-admin/app");
+const https = require("https");
 
 initializeApp();
 setGlobalOptions({ maxInstances: 10, region: "asia-northeast3" });
@@ -35,6 +37,63 @@ const calcLevel = (attempts = 0, solvedCount = 0) => {
 const getLevelBonus = (attempts = 0, solvedCount = 0) =>
   LEVEL_THRESHOLDS.find((t) => t.level === calcLevel(attempts, solvedCount))?.bonus ?? 0;
 
+// 카카오 액세스 토큰으로 카카오 유저 정보 조회
+const getKakaoProfile = (accessToken) =>
+  new Promise((resolve, reject) => {
+    const options = {
+      hostname: "kapi.kakao.com",
+      path: "/v2/user/me",
+      method: "GET",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    };
+    const req = https.request(options, (res) => {
+      let data = "";
+      res.on("data", (chunk) => (data += chunk));
+      res.on("end", () => {
+        try { resolve(JSON.parse(data)); }
+        catch (e) { reject(e); }
+      });
+    });
+    req.on("error", reject);
+    req.end();
+  });
+
+// 카카오 토큰 → Firebase Custom Token 발급
+exports.kakaoLogin = onCall({ enforceAppCheck: false, invoker: "public" }, async (request) => {
+  const { accessToken, referredBy } = request.data;
+  if (!accessToken) throw new HttpsError("invalid-argument", "accessToken 필요");
+
+  const profile = await getKakaoProfile(accessToken);
+  if (!profile.id) throw new HttpsError("unauthenticated", "카카오 인증 실패");
+
+  const kakaoId = String(profile.id);
+  const nickname = profile.kakao_account?.profile?.nickname ?? "유저";
+  const profileImage = profile.kakao_account?.profile?.profile_image_url ?? null;
+
+  // Firebase Custom Token 발급 (uid = 카카오 ID)
+  const customToken = await getAuth().createCustomToken(kakaoId);
+
+  // Firestore 유저 문서 생성 (신규만)
+  const userRef = db.collection("users").doc(kakaoId);
+  const snap = await userRef.get();
+  if (!snap.exists()) {
+    await userRef.set({
+      kakaoId,
+      nickname,
+      profileImage,
+      points: 500, // SIGNUP_REWARD
+      attempts: 0,
+      solvedCount: 0,
+      freeTicketLastUsed: null,
+      referredBy: referredBy ?? null,
+      joinedAt: FieldValue.serverTimestamp(),
+      newbieBonusClaimed: false,
+    });
+  }
+
+  return { customToken, uid: kakaoId, nickname, profileImage };
+});
+
 exports.submitAnswer = onCall({ enforceAppCheck: false, invoker: "public" }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) throw new HttpsError("unauthenticated", "로그인 필요");
@@ -56,7 +115,6 @@ exports.submitAnswer = onCall({ enforceAppCheck: false, invoker: "public" }, asy
   const isCorrect = acceptedAnswers.some((a) => normalize(a) === normalize(answer));
 
   if (!isCorrect) {
-    // 오답 처리 (ticketType은 클라이언트에서 전달)
     const ticketType = request.data.ticketType ?? "free";
     if (ticketType === "paid") {
       await Promise.all([

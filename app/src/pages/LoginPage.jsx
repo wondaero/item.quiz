@@ -1,10 +1,9 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore'
-import { signInAnonymously } from 'firebase/auth'
-import { db, auth } from '../firebase/config'
+import { signInWithCustomToken } from 'firebase/auth'
+import { httpsCallable } from 'firebase/functions'
+import { auth, functions } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
-import { SIGNUP_REWARD } from '../constants'
 import './LoginPage.css'
 
 const kakaoLogin = () => new Promise((resolve, reject) => {
@@ -13,10 +12,6 @@ const kakaoLogin = () => new Promise((resolve, reject) => {
     success: resolve,
     fail: reject,
   })
-})
-
-const kakaoGetProfile = () => new Promise((resolve, reject) => {
-  window.Kakao.API.request({ url: '/v2/user/me', success: resolve, fail: reject })
 })
 
 export default function LoginPage() {
@@ -31,36 +26,19 @@ export default function LoginPage() {
 
   const handleKakaoLogin = async () => {
     try {
-      await kakaoLogin()
-      const res = await kakaoGetProfile()
+      const authResponse = await kakaoLogin()
+      const accessToken = authResponse.access_token
 
-      const kakaoId = String(res.id)
-      const nickname = res.kakao_account?.profile?.nickname ?? '유저'
-      const profileImage = res.kakao_account?.profile?.profile_image_url ?? null
+      const ref = localStorage.getItem('qwiz_ref') ?? null
 
-      const { user: firebaseUser } = await signInAnonymously(auth)
-      const uid = firebaseUser.uid
+      const kakaoLoginFn = httpsCallable(functions, 'kakaoLogin')
+      const { data } = await kakaoLoginFn({ accessToken, referredBy: ref })
 
-      const userRef = doc(db, 'users', uid)
-      const snap = await getDoc(userRef)
-      if (!snap.exists()) {
-        const ref = localStorage.getItem('qwiz_ref') ?? null
-        await setDoc(userRef, {
-          kakaoId,
-          nickname,
-          profileImage,
-          points: SIGNUP_REWARD,
-          attempts: 0,
-          solvedCount: 0,
-          freeTicketLastUsed: null,
-          referredBy: ref,
-          joinedAt: Timestamp.now(),
-          newbieBonusClaimed: false,
-        })
-        if (ref) localStorage.removeItem('qwiz_ref')
-      }
+      await signInWithCustomToken(auth, data.customToken)
 
-      setUser({ uid, kakaoId, nickname, profileImage })
+      if (ref) localStorage.removeItem('qwiz_ref')
+
+      setUser({ uid: data.uid, nickname: data.nickname, profileImage: data.profileImage })
       navigate('/quiz')
     } catch (err) {
       console.error('로그인 실패', err)
