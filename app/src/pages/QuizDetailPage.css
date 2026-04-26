@@ -83,14 +83,37 @@
   padding: 0 24px;
 }
 
-.ad-notice {
+.ad-tip-box {
   background: var(--bg-card);
   border: 1px solid var(--border-2);
-  border-radius: 8px;
-  padding: 12px 16px;
-  font-size: 0.85rem;
-  color: var(--text-sub);
-  line-height: 1.5;
+  border-radius: 12px;
+  padding: 24px 20px;
+  width: 100%;
+  text-align: center;
+  min-height: 90px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+
+.ad-tip-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.ad-tip-text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+  animation: tip-fade 0.4s ease;
+}
+
+@keyframes tip-fade {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .bounty-display {

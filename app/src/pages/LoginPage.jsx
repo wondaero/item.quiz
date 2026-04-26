@@ -8,7 +8,7 @@ import './LoginPage.css'
 
 const kakaoLogin = () => new Promise((resolve, reject) => {
   window.Kakao.Auth.login({
-    throughTalk: !import.meta.env.DEV,
+    throughTalk: false,
     success: resolve,
     fail: reject,
   })

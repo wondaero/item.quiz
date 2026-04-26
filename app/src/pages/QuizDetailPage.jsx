@@ -9,6 +9,12 @@ import { CURRENCY, DEV_ACCESS } from '../constants'
 
 const getTodayString = () => new Date().toISOString().slice(0, 10)
 
+const AD_TIPS = [
+  '도전자가 많을수록 현상금은 커진다',
+  '틀려도 괜찮아요, 현상금만 올라갈 뿐',
+  '친구 초대하고 또 벌고',
+]
+
 function HintsDisplay({ hints, isHtml }) {
   return (
     <p className="hints">
@@ -28,15 +34,14 @@ export default function QuizDetailPage() {
   const [quiz, setQuiz] = useState(null)
   const [userData, setUserData] = useState(null)
   const [answer, setAnswer] = useState('')
-  const [phase, setPhase] = useState('ticket')
+  const [phase, setPhase] = useState('loading-data')
   const [ticketType, setTicketType] = useState(null)
   const [result, setResult] = useState(null)
   const [leveledUp, setLeveledUp] = useState(null)
   const [lockedBounty, setLockedBounty] = useState(0)
-  const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
-  const [selecting, setSelecting] = useState(false)
   const [showQuitConfirm, setShowQuitConfirm] = useState(false)
+  const [tipIndex, setTipIndex] = useState(0)
 
   useEffect(() => {
     if (!db) return
@@ -45,12 +50,47 @@ export default function QuizDetailPage() {
         getDoc(doc(db, 'quizzes', id)),
         getDoc(doc(db, 'users', user.uid)),
       ])
-      if (quizSnap.exists()) setQuiz({ id: quizSnap.id, ...quizSnap.data() })
-      if (userSnap.exists()) setUserData(userSnap.data())
-      setLoading(false)
+      if (!quizSnap.exists()) { navigate('/quiz'); return }
+      const quizData = { id: quizSnap.id, ...quizSnap.data() }
+      const userData = userSnap.exists() ? userSnap.data() : null
+      setQuiz(quizData)
+      setUserData(userData)
+
+      if (quizData.solvedBy != null) {
+        setPhase('archive')
+        return
+      }
+
+      const hasFree = (DEV_ACCESS.전체접근 || DEV_ACCESS.무료참가권쿨타임)
+        || userData?.freeTicketLastUsed !== getTodayString()
+
+      if (DEV_ACCESS.전체접근 || DEV_ACCESS.광고 || hasFree) {
+        // 무료권 있으면 바로 플레이
+        const type = (DEV_ACCESS.전체접근 || DEV_ACCESS.광고 || hasFree) && hasFree ? 'free' : 'paid'
+        if (hasFree) {
+          await updateDoc(doc(db, 'users', user.uid), { freeTicketLastUsed: getTodayString() })
+          await updateDoc(doc(db, 'quizzes', id), { activePlayers: increment(1) })
+          setLockedBounty(quizData.bounty)
+          setTicketType('free')
+          setPhase('play')
+        } else {
+          setPhase('ad')
+        }
+      } else {
+        setPhase('ad')
+      }
     }
     fetchData()
   }, [id, user.uid])
+
+  // 팁 순환
+  useEffect(() => {
+    if (phase !== 'ad') return
+    const interval = setInterval(() => {
+      setTipIndex((i) => (i + 1) % AD_TIPS.length)
+    }, 2000)
+    return () => clearInterval(interval)
+  }, [phase])
 
   useEffect(() => {
     if (phase !== 'play' || !db) return
@@ -68,50 +108,13 @@ export default function QuizDetailPage() {
     return () => unsub()
   }, [phase, id, user.uid, ticketType])
 
-  useEffect(() => {
-    if (quiz && quiz.solvedBy != null && phase === 'ticket') setPhase('archive')
-  }, [quiz, phase])
-
-  const isSolved = quiz?.solvedBy != null
-  const hasFreeTicketToday = (DEV_ACCESS.전체접근 || DEV_ACCESS.무료참가권쿨타임) || userData?.freeTicketLastUsed !== getTodayString()
-
-  const enterPlay = useCallback(async (type) => {
+  const handleAdWatched = useCallback(async () => {
+    // TODO: 실제 AdMob 광고 시청 완료 후 호출
     if (db) await updateDoc(doc(db, 'quizzes', id), { activePlayers: increment(1) })
     setLockedBounty(quiz.bounty)
-    setTicketType(type)
+    setTicketType('paid')
     setPhase('play')
   }, [id, quiz])
-
-  const handleSelectPaid = async () => {
-    if (selecting) return
-    setSelecting(true)
-    try {
-      setTicketType('paid')
-      if (DEV_ACCESS.전체접근 || DEV_ACCESS.광고) {
-        await enterPlay('paid')
-      } else {
-        setPhase('ad')
-      }
-    } finally {
-      setSelecting(false)
-    }
-  }
-
-  const handleSelectFree = async () => {
-    if (selecting) return
-    setSelecting(true)
-    try {
-      if (db) await updateDoc(doc(db, 'users', user.uid), { freeTicketLastUsed: getTodayString() })
-      await enterPlay('free')
-    } finally {
-      setSelecting(false)
-    }
-  }
-
-  const handleAdWatched = async () => {
-    // TODO: 실제 AdMob 광고 시청 완료 후 호출
-    await enterPlay('paid')
-  }
 
   const handleQuit = async () => {
     if (db) await updateDoc(doc(db, 'quizzes', id), { activePlayers: increment(-1) })
@@ -145,54 +148,18 @@ export default function QuizDetailPage() {
     }
   }
 
-  if (loading) return <div className="page-loading"><div className="spinner" /></div>
-  if (!quiz) return <div className="quiz-detail-loading">퀴즈를 찾을 수 없습니다</div>
+  if (phase === 'loading-data') return <div className="page-loading"><div className="spinner" /></div>
+  if (!quiz) return null
 
   return (
     <div className={`quiz-detail-page${phase === 'play' ? ' play-mode' : ''}`}>
 
-      {phase === 'ticket' && (
-        <div className="ticket-phase">
-          <h2>참가권 선택</h2>
-          <p className="ticket-desc">도전 방식을 선택하세요</p>
-
-          <div className={`ticket-card paid ${selecting ? 'used' : ''}`} onClick={!selecting ? handleSelectPaid : undefined}>
-            <div className="ticket-title">광고 참가권</div>
-            <ul className="ticket-benefits">
-              <li>현상금 누적에 기여 (+1P)</li>
-              <li>틀려도 1 {CURRENCY} 환불</li>
-              <li>맞추면 현상금 전액 획득</li>
-            </ul>
-            <div className="ticket-action">{selecting ? '입장 중...' : '광고 보고 도전'}</div>
-          </div>
-
-          <div className={`ticket-card free ${!hasFreeTicketToday ? 'used' : ''}`}
-            onClick={hasFreeTicketToday ? handleSelectFree : undefined}>
-            <div className="ticket-title">
-              무료 참가권
-              {!hasFreeTicketToday && <span className="used-badge">오늘 사용함</span>}
-            </div>
-            <ul className="ticket-benefits">
-              <li>하루 1회 무료</li>
-              <li>현상금 기여 없음</li>
-              <li>틀려도 환불 없음</li>
-              <li>맞추면 현상금 전액 획득</li>
-            </ul>
-            <div className="ticket-action">
-              {hasFreeTicketToday ? '무료로 도전' : '내일 다시 사용 가능'}
-            </div>
-          </div>
-
-          <div className="ticket-notice">
-            ⚠️ 정답자가 나오면 도전이 종료되며 입장권은 자동 환불됩니다
-          </div>
-          <button className="btn-ghost" onClick={() => navigate(-1)}>돌아가기</button>
-        </div>
-      )}
-
       {phase === 'ad' && (
         <div className="ad-phase">
-          <p>광고를 시청하면 퀴즈에 도전할 수 있어요</p>
+          <div className="ad-tip-box">
+            <p className="ad-tip-label">잠깐, 알고 계셨나요?</p>
+            <p className="ad-tip-text">{AD_TIPS[tipIndex]}</p>
+          </div>
           <button className="btn-primary" onClick={handleAdWatched}>광고 보고 도전하기</button>
           <button className="btn-ghost" onClick={() => navigate(-1)}>돌아가기</button>
         </div>
@@ -262,7 +229,7 @@ export default function QuizDetailPage() {
                 : <p className="result-sub">현상금 변동 없음</p>
               }
               <button className="btn-primary" onClick={() => {
-                setAnswer(''); setResult(null); setTicketType(null); setLockedBounty(0); setPhase('ticket')
+                setAnswer(''); setResult(null); setTicketType(null); setLockedBounty(0); setPhase('ad')
               }}>다시 도전하기</button>
             </>
           )}
