@@ -2,8 +2,10 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { signInWithCustomToken } from 'firebase/auth'
 import { httpsCallable } from 'firebase/functions'
-import { auth, functions } from '../firebase/config'
+import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore'
+import { auth, db, functions } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
+import { SIGNUP_REWARD } from '../constants'
 import './LoginPage.css'
 
 const kakaoLogin = () => new Promise((resolve, reject) => {
@@ -28,15 +30,31 @@ export default function LoginPage() {
     try {
       const authResponse = await kakaoLogin()
       const accessToken = authResponse.access_token
-
       const ref = localStorage.getItem('qwiz_ref') ?? null
 
       const kakaoLoginFn = httpsCallable(functions, 'kakaoLogin')
-      const { data } = await kakaoLoginFn({ accessToken, referredBy: ref })
+      const { data } = await kakaoLoginFn({ accessToken })
 
       await signInWithCustomToken(auth, data.customToken)
 
-      if (ref) localStorage.removeItem('qwiz_ref')
+      // 신규 유저 Firestore 문서 생성
+      const userRef = doc(db, 'users', data.uid)
+      const snap = await getDoc(userRef)
+      if (!snap.exists()) {
+        await setDoc(userRef, {
+          kakaoId: data.uid,
+          nickname: data.nickname,
+          profileImage: data.profileImage,
+          points: SIGNUP_REWARD,
+          attempts: 0,
+          solvedCount: 0,
+          freeTicketLastUsed: null,
+          referredBy: ref,
+          joinedAt: Timestamp.now(),
+          newbieBonusClaimed: false,
+        })
+        if (ref) localStorage.removeItem('qwiz_ref')
+      }
 
       setUser({ uid: data.uid, nickname: data.nickname, profileImage: data.profileImage })
       navigate('/quiz')

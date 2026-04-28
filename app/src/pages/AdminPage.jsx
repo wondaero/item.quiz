@@ -77,13 +77,15 @@ export default function AdminPage() {
     if (!db) return
     setDashLoading(true)
     try {
-      const [usersSnap, pendingSnap] = await Promise.all([
+      const [usersSnap, pendingSnap, quizzesSnap] = await Promise.all([
         getDocs(query(collection(db, 'users'), where('points', '>=', Math.min(...GIFT_TIERS)))),
         getCountFromServer(query(collection(db, 'exchanges'), where('status', '==', 'pending'))),
+        getDocs(collection(db, 'quizzes')),
       ])
       setDashData({
         userPoints: usersSnap.docs.map((d) => d.data().points),
         pendingCount: pendingSnap.data().count,
+        quizzes: quizzesSnap.docs.map((d) => ({ id: d.id, ...d.data() })),
       })
     } finally {
       setDashLoading(false)
@@ -182,6 +184,7 @@ export default function AdminPage() {
           previewHint: previewHint.trim() || null,
           adminNote: adminNote.trim() || null,
           bounty: finalBounty,
+          initialBounty: finalBounty,
           challengers: 0,
           activePlayers: 0,
           solvedBy: null,
@@ -501,6 +504,51 @@ export default function AdminPage() {
                     })}
                   </div>
                 </section>
+
+                {(() => {
+                  const total = dashData.quizzes.length
+                  const solved = dashData.quizzes.filter(q => q.solvedBy).length
+                  const active = total - solved
+                  let profitCount = 0, lossCount = 0, totalPnl = 0
+                  dashData.quizzes.forEach((q) => {
+                    const initial = q.initialBounty ?? q.bounty
+                    const pnl = (q.bounty - initial) - initial
+                    totalPnl += pnl
+                    if (pnl >= 0) profitCount++
+                    else lossCount++
+                  })
+                  return (
+                    <section>
+                      <label>손익 요약</label>
+                      <div className="dash-grid">
+                        <div className="dash-card">
+                          <span className="dash-count">{total}</span>
+                          <span className="dash-label">전체 문제</span>
+                        </div>
+                        <div className="dash-card">
+                          <span className="dash-count">{active}</span>
+                          <span className="dash-label">진행중</span>
+                        </div>
+                        <div className="dash-card">
+                          <span className="dash-count">{solved}</span>
+                          <span className="dash-label">종료</span>
+                        </div>
+                        <div className={`dash-card ${profitCount > 0 ? 'profit' : ''}`}>
+                          <span className="dash-count">{profitCount}</span>
+                          <span className="dash-label">흑자 문제</span>
+                        </div>
+                        <div className={`dash-card ${lossCount > 0 ? 'warning' : ''}`}>
+                          <span className="dash-count">{lossCount}</span>
+                          <span className="dash-label">적자 문제</span>
+                        </div>
+                        <div className={`dash-card ${totalPnl >= 0 ? 'profit' : 'warning'}`}>
+                          <span className="dash-count">{totalPnl >= 0 ? '+' : ''}{totalPnl.toLocaleString()}</span>
+                          <span className="dash-label">토탈 손익 ({CURRENCY})</span>
+                        </div>
+                      </div>
+                    </section>
+                  )
+                })()}
 
                 {dashData.pendingCount > 0 && (
                   <section>
