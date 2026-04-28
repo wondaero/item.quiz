@@ -37,7 +37,7 @@
 
 ### 연결 완료
 - Firebase 프로젝트: `qwiz-67f42` — `.env` 설정값 입력 완료
-- 카카오 로그인 실제 연동 완료 (`throughTalk: !import.meta.env.DEV`)
+- 카카오 로그인 실제 연동 완료 (`throughTalk: false` — 웹 팝업 방식, 앱 빌드 시 분기 예정)
 - VITE_ADMIN_UID=4833965068 설정 완료
 
 ### 구현 완료
@@ -90,6 +90,23 @@
   - Cloud Run 공개 액세스 허용 설정 완료
 - **firebase/config.js**: `getFunctions` 추가, `asia-northeast3` 리전 설정
 - **QuizDetailPage**: `handleSubmit` → `httpsCallable(functions, 'submitAnswer')` 호출로 교체 (클라이언트 정답 검증 제거)
+- **카카오 로그인 → Firebase Custom Token 방식으로 전환**:
+  - `kakaoLogin` Cloud Function 추가 — 카카오 액세스 토큰 검증 후 Custom Token 발급
+  - Firebase uid = 카카오 ID → 어느 기기에서 로그인해도 동일 유저 문서 보장
+  - `LoginPage`: `signInWithCustomToken` + Firestore 신규 유저 문서 생성
+  - `App.jsx`: `onAuthStateChanged`로 Firebase Auth 세션 복구 대기 후 렌더링 (`authReady`)
+  - `throughTalk: false` — 웹에서 카카오 팝업 로그인 (앱 빌드 시 플랫폼 분기 예정)
+  - IAM: `474549353682-compute@developer.gserviceaccount.com`에 서비스 계정 토큰 생성자 + 편집자 역할 추가
+  - Firebase Authentication 승인된 도메인에 `qwiz-app.vercel.app` 추가
+  - Firestore 보안 규칙 배포 완료
+- **QuizDetailPage UX 개선**: 참가권 선택 화면 제거 → 무료권 있으면 바로 플레이, 없으면 광고 로딩 화면
+  - 광고 로딩 화면에 팁 멘트 3개 2초 간격 순환 (fade 애니메이션)
+  - 오답 후 재도전 시 광고 화면으로 복귀
+- **QuizDetailPage 여백 수정**: `box-sizing: border-box` + `padding: 0 24px` 적용
+- **AdminPage 손익 대시보드 추가**:
+  - 퀴즈 등록 시 `initialBounty` 필드 저장
+  - 대시보드 탭: 전체/진행중/종료/흑자/적자 문제 수 + 토탈 손익 카드 6개로 요약
+  - 손익 계산: `(bounty - initialBounty) - initialBounty`
 
 ### DEV_ACCESS (개발용 우회)
 `constants.js`의 DEV_ACCESS — `import.meta.env.DEV` 기반, 빌드 시 자동 제거됨
@@ -101,8 +118,8 @@
 - **Frontend**: React + Vite
 - **App 래핑**: Capacitor (Android/iOS)
 - **DB**: Firebase Firestore
-- **Auth**: 카카오 로그인 + Firebase 익명 인증 (`signInAnonymously`) — uid는 Firebase uid 사용
-- **Cloud Functions**: `functions/index.js` — `submitAnswer` 배포 완료 (asia-northeast3)
+- **Auth**: 카카오 로그인 → Firebase Custom Token (`createCustomToken(kakaoId)`) — uid = 카카오 ID
+- **Cloud Functions**: `functions/index.js` — `kakaoLogin` + `submitAnswer` 배포 완료 (asia-northeast3)
 - **상태관리**: Zustand (localStorage 지속)
 - **라우팅**: React Router DOM
 - **광고**: AdMob (보상형, 추후 연동)
@@ -132,9 +149,9 @@ app/
 │   └── main.jsx                        # 테마 import 위치
 ├── .env                                # 실 키값 입력 완료
 functions/
-├── index.js                            # submitAnswer Cloud Function (배포 완료)
+├── index.js                            # kakaoLogin + submitAnswer Cloud Function (배포 완료)
 ├── package.json
-firestore.rules                         # 보안 규칙 (배포 필요)
+firestore.rules                         # 보안 규칙 (배포 완료)
 firebase.json
 ```
 
@@ -202,29 +219,26 @@ firebase.json
 
 ## 보안 이슈
 
-### 1. Admin ID 취득 (미해결)
-- `localStorage`에 `{uid: '4833965068'}` 직접 입력하면 Admin으로 인식됨
-- **해결책**: 카카오 토큰 → Firebase Custom Token 발급 함수 추가
+### 1. Admin ID 취득 (부분 해결)
+- `localStorage`에 `{uid: '4833965068'}` 직접 입력하면 Admin으로 인식 가능
+- Custom Token 도입으로 서버사이드 uid 검증 기반 마련됨
+- **완전 해결책**: Firestore rules에서 `request.auth.uid == adminUid` 검증 추가
 
-### 2. 정답 유출 (부분 해결)
-- ~~QuizDetailPage에서 answers 필드 클라이언트 노출~~ → Cloud Functions 서버 검증으로 이동
-- 단, Firestore 규칙에서 `answers` 필드 읽기 차단은 아직 미적용
+### 2. 정답 유출 (해결됨)
+- ~~QuizDetailPage에서 answers 필드 클라이언트 노출~~ → `submitAnswer` CF 서버 검증으로 이동
 
-### 3. 포인트 직접 조작 (부분 해결)
-- 정답 처리/포인트 지급은 Cloud Functions로 이동
-- 단, Firebase Anonymous Auth 토큰이 Functions에 전달 안 되는 이슈 미해결 (다음 작업)
-
-> **다음 세션 최우선 작업**: `request.auth` null 이슈 해결
-> — App.jsx에서 `onAuthStateChanged` 리스너로 Firebase Auth 세션 복구 로직 추가 필요
+### 3. 포인트 직접 조작 (해결됨)
+- 정답 처리/포인트 지급 전부 `submitAnswer` Cloud Function에서 처리
+- Firebase Custom Token으로 `request.auth.uid` 서버사이드 검증 완료
 
 ---
 
 ## 남은 작업
 
 ### 급한 것 (다음 세션)
-- [ ] **`request.auth` null 이슈 해결** — App.jsx `onAuthStateChanged`로 Firebase Auth 세션 복구, 기존 유저 재로그인 처리
-- [ ] Firestore 보안 규칙 배포: `firebase deploy --only firestore:rules`
+- [ ] Vercel 배포 + 엔드투엔드 테스트: 로그인 → 퀴즈 → 제출 → 포인트 확인
 - [ ] 카카오 개발자 콘솔 → 동의항목 → 닉네임 **필수동의** 설정 (현재 "익명"으로 뜸)
+- [ ] 다른 계정으로 동일 uid 유지 여부 확인 (크로스 디바이스 테스트)
 
 ### 나랑 같이 해야 할 것
 - [ ] AdminPage 상품권 관리 — Firebase 실 연결 (목업 제거됨, 빈 배열 상태)
@@ -232,7 +246,7 @@ firebase.json
 - [ ] ExchangePage(상점) — 현재 환전 신청만 있음, 추후 기능 확장 가능
 - [ ] 환전 신청 재고 부족 시 관리자 알림 (adminAlerts + onSnapshot)
 - [ ] Cloud Functions 추가:
-  - 카카오 토큰 → Firebase Custom Token (Admin 보안 이슈 해결)
+  - ~~카카오 토큰 → Firebase Custom Token~~ (완료)
   - 환전 신청 시 관리자 FCM 푸시 알림
   - 새 퀴즈 등록 시 전체 유저 FCM 푸시 알림 (리텐션 핵심)
   - activePlayers onDisconnect 처리

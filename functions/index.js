@@ -60,7 +60,7 @@ const getKakaoProfile = (accessToken) =>
 
 // 카카오 토큰 → Firebase Custom Token 발급
 exports.kakaoLogin = onCall({ enforceAppCheck: false, invoker: "public" }, async (request) => {
-  const { accessToken, referredBy } = request.data;
+  const { accessToken } = request.data;
   if (!accessToken) throw new HttpsError("invalid-argument", "accessToken 필요");
 
   const profile = await getKakaoProfile(accessToken);
@@ -72,24 +72,6 @@ exports.kakaoLogin = onCall({ enforceAppCheck: false, invoker: "public" }, async
 
   // Firebase Custom Token 발급 (uid = 카카오 ID)
   const customToken = await getAuth().createCustomToken(kakaoId);
-
-  // Firestore 유저 문서 생성 (신규만)
-  const userRef = db.collection("users").doc(kakaoId);
-  const snap = await userRef.get();
-  if (!snap.exists()) {
-    await userRef.set({
-      kakaoId,
-      nickname,
-      profileImage,
-      points: 500, // SIGNUP_REWARD
-      attempts: 0,
-      solvedCount: 0,
-      freeTicketLastUsed: null,
-      referredBy: referredBy ?? null,
-      joinedAt: FieldValue.serverTimestamp(),
-      newbieBonusClaimed: false,
-    });
-  }
 
   return { customToken, uid: kakaoId, nickname, profileImage };
 });
