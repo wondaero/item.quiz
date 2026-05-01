@@ -144,9 +144,13 @@ export default function ExchangePage() {
           )}
 
           {amount && !(stock[amount] > 0) ? (
-            <button className="btn-primary btn-request" onClick={handleStockRequest} disabled={submitting}>
-              {submitting ? '신청 중...' : '재고 신청하기'}
-            </button>
+            amount <= (userData?.points ?? 0) ? (
+              <button className="btn-primary btn-request" onClick={handleStockRequest} disabled={submitting}>
+                {submitting ? '신청 중...' : '재고 신청하기'}
+              </button>
+            ) : (
+              <button className="btn-primary" disabled>포인트 부족</button>
+            )
           ) : (
             <button className="btn-primary" onClick={handleExchange} disabled={submitting || !amount}>
               {submitting ? '신청 중...' : '환전 신청'}
