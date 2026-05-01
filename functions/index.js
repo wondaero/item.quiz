@@ -1,6 +1,7 @@
 const { setGlobalOptions } = require("firebase-functions");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { onValueDeleted } = require("firebase-functions/v2/database");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { getAuth } = require("firebase-admin/auth");
 const { getMessaging } = require("firebase-admin/messaging");
@@ -245,14 +246,13 @@ exports.onQuizCreated = onDocumentCreated(
 );
 
 // RTDB presence 삭제 시 activePlayers 감소
-// TODO: Firebase Console에서 Realtime Database 생성 후 아래 주석 해제 + 배포
-// exports.onPresenceDeleted = onValueDeleted(
-//   { ref: "presence/{quizId}/{uid}", region: "us-central1" },
-//   async (event) => {
-//     const { quizId } = event.params;
-//     const quizRef = db.collection("quizzes").doc(quizId);
-//     const snap = await quizRef.get();
-//     if (!snap.exists || snap.data()?.solvedBy) return;
-//     await quizRef.update({ activePlayers: FieldValue.increment(-1) });
-//   }
-// );
+exports.onPresenceDeleted = onValueDeleted(
+  { ref: "presence/{quizId}/{uid}", instance: "qwiz-67f42-default-rtdb", region: "asia-southeast1" },
+  async (event) => {
+    const { quizId } = event.params;
+    const quizRef = db.collection("quizzes").doc(quizId);
+    const snap = await quizRef.get();
+    if (!snap.exists || snap.data()?.solvedBy) return;
+    await quizRef.update({ activePlayers: FieldValue.increment(-1) });
+  }
+);

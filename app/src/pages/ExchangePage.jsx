@@ -101,8 +101,8 @@ export default function ExchangePage() {
       {submitted ? (
         <div className="exchange-success">
           <div className="success-icon">{submittedType === 'request' ? '🔔' : '✅'}</div>
-          <h3>{submittedType === 'request' ? '재고 신청 완료' : '환전 신청 완료'}</h3>
-          <p>{submittedType === 'request' ? '관리자에게 알림이 전송됐어요. 재고 확보 후 안내드립니다.' : '관리자 확인 후 상품권이 지급됩니다'}</p>
+          <h3>{submittedType === 'request' ? '신청 완료' : '환전 신청 완료'}</h3>
+          <p>{submittedType === 'request' ? '확인 후 빠르게 처리해 드릴게요.' : '관리자 확인 후 상품권이 지급됩니다'}</p>
           <button className="btn-primary" onClick={() => navigate('/my')}>내 정보로</button>
         </div>
       ) : (
@@ -146,7 +146,7 @@ export default function ExchangePage() {
           {amount && !(stock[amount] > 0) ? (
             amount <= (userData?.points ?? 0) ? (
               <button className="btn-primary btn-request" onClick={handleStockRequest} disabled={submitting}>
-                {submitting ? '신청 중...' : '재고 신청하기'}
+                {submitting ? '신청 중...' : '품절 신청'}
               </button>
             ) : (
               <button className="btn-primary" disabled>포인트 부족</button>
