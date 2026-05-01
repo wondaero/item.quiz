@@ -753,3 +753,43 @@
 
 .dash-card.profit { border-color: #4ade80; }
 .dash-card.profit .dash-count { color: #4ade80; }
+
+.chart-range-bar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.chart-range-btn {
+  padding: 6px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--text-sub);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.chart-range-btn.active {
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.chart-custom-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.chart-custom-range span {
+  color: var(--text-muted);
+}
+
+.chart-custom-range .answer-field {
+  flex: 1;
+  font-size: 0.85rem;
+  padding: 8px 10px;
+}

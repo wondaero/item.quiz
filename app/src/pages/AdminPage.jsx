@@ -5,6 +5,7 @@ import { db } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
 import './AdminPage.css'
 import { CURRENCY } from '../constants'
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts'
 
 const BOUNTY_OPTIONS = [500, 1000, 2000, 3000, 5000]
 const POINT_TIERS = [2500, 5000, 10000, 20000]
@@ -46,6 +47,12 @@ export default function AdminPage() {
 
   const [dashLoading, setDashLoading] = useState(false)
   const [dashData, setDashData] = useState(null)
+
+  const [chartRange, setChartRange] = useState('30d')
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo, setCustomTo] = useState('')
+  const [chartData, setChartData] = useState([])
+  const [chartLoading, setChartLoading] = useState(false)
 
   const [isHtml, setIsHtml] = useState(false)
   const [hintsText, setHintsText] = useState('')
@@ -92,8 +99,52 @@ export default function AdminPage() {
     }
   }, [])
 
+  const fetchChart = useCallback(async (from, to) => {
+    if (!db) return
+    setChartLoading(true)
+    try {
+      const snap = await getDocs(
+        query(collection(db, 'dailyStats'), where('__name__', '>=', from), where('__name__', '<=', to))
+      )
+      const map = {}
+      snap.docs.forEach((d) => { map[d.id] = d.data() })
+
+      const result = []
+      const cur = new Date(from)
+      const end = new Date(to)
+      while (cur <= end) {
+        const key = cur.toISOString().slice(0, 10)
+        const d = map[key] ?? {}
+        result.push({
+          date: key.slice(5),
+          수익: d.wrongPaid ?? 0,
+          지출: d.bountyPaid ?? 0,
+          정답: d.correct ?? 0,
+        })
+        cur.setDate(cur.getDate() + 1)
+      }
+      setChartData(result)
+    } finally {
+      setChartLoading(false)
+    }
+  }, [])
+
+  const getChartRange = useCallback(() => {
+    const todayKst = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10)
+    if (chartRange === 'custom') return { from: customFrom, to: customTo }
+    const days = { '7d': 7, '30d': 30, '90d': 90, '1y': 365, 'all': 3650 }[chartRange]
+    const from = new Date(new Date(todayKst).getTime() - (days - 1) * 86400000).toISOString().slice(0, 10)
+    return { from, to: todayKst }
+  }, [chartRange, customFrom, customTo])
+
   useEffect(() => { if (tab === 'quizzes' && !showForm) fetchQuizzes() }, [tab, showForm, fetchQuizzes])
   useEffect(() => { if (tab === 'dashboard') fetchDashboard() }, [tab, fetchDashboard])
+  useEffect(() => {
+    if (tab !== 'dashboard') return
+    if (chartRange === 'custom' && (!customFrom || !customTo)) return
+    const { from, to } = getChartRange()
+    fetchChart(from, to)
+  }, [tab, chartRange, customFrom, customTo, fetchChart, getChartRange])
 
   useEffect(() => {
     const hints = hintsText.split('\n').map((h) => h.trim()).filter(Boolean).slice(0, 5)
@@ -459,6 +510,40 @@ export default function AdminPage() {
             <span>대시보드</span>
             <button className="preview-btn" onClick={fetchDashboard}>새로고침</button>
           </div>
+
+          <section>
+            <label>수익 그래프</label>
+            <div className="chart-range-bar">
+              {['7d','30d','90d','1y','all','custom'].map((r) => (
+                <button key={r} className={`chart-range-btn ${chartRange === r ? 'active' : ''}`} onClick={() => setChartRange(r)}>
+                  {r === '7d' ? '7일' : r === '30d' ? '1달' : r === '90d' ? '3달' : r === '1y' ? '1년' : r === 'all' ? '전체' : '기간'}
+                </button>
+              ))}
+            </div>
+            {chartRange === 'custom' && (
+              <div className="chart-custom-range">
+                <input type="date" className="answer-field" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
+                <span>~</span>
+                <input type="date" className="answer-field" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
+              </div>
+            )}
+            {chartLoading ? (
+              <p className="empty-msg">불러오는 중...</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={chartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} interval="preserveStartEnd" />
+                  <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
+                  <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }} />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Line type="monotone" dataKey="수익" stroke="var(--primary)" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="지출" stroke="#f87171" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="정답" stroke="#60a5fa" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </section>
 
           {dashLoading ? (
             <p className="empty-msg">불러오는 중...</p>

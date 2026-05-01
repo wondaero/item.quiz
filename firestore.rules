@@ -1,23 +1,19 @@
 rules_version = '2';
-// ⚠️ 카카오 로그인만 사용 중 (Firebase Auth 미연동)
-// request.auth가 항상 null이므로 현재는 데이터 구조 검증 위주 규칙
-// Cloud Functions 추가 후 강화 예정
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 퀴즈 - 누구나 읽기, 쓰기는 필드 범위만 제한
+    // 퀴즈 - 누구나 읽기, 관리자 전체 쓰기, 일반 업데이트는 필드 제한
     match /quizzes/{quizId} {
       allow read: if true;
 
-      // 생성은 관리자만 (Cloud Functions 연동 전까지 콘솔에서 직접)
-      allow create: if false;
-
-      // 업데이트: 허용 필드만 변경 가능
-      allow update: if onlyUpdatingFields(['bounty', 'challengers', 'wrongAnswers',
+      // 관리자: 생성/수정 전부 허용
+      allow create: if isAdmin();
+      allow update: if isAdmin()
+                    || (onlyUpdatingFields(['bounty', 'challengers', 'wrongAnswers',
                                            'solvedBy', 'solvedAt', 'activePlayers'])
-                    && incomingBounty()
-                    && incomingActivePlayers();
+                        && incomingBounty()
+                        && incomingActivePlayers());
 
       // 삭제 불가
       allow delete: if false;
@@ -49,6 +45,10 @@ service cloud.firestore {
     }
 
     // --- 헬퍼 함수 ---
+
+    function isAdmin() {
+      return request.auth != null && request.auth.uid == '4833965068';
+    }
 
     function onlyUpdatingFields(fields) {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);

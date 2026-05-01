@@ -12,6 +12,8 @@ const db = getFirestore();
 
 const normalize = (s) => s.replace(/\s/g, "").toLowerCase();
 
+const getKstDate = () => new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+
 const NEWBIE_PERIOD_DAYS = 7;
 const NEWBIE_FIRST_SOLVE = 500;
 const REFERRAL_REWARD = 500;
@@ -98,6 +100,8 @@ exports.submitAnswer = onCall({ enforceAppCheck: false, invoker: "public" }, asy
 
   if (!isCorrect) {
     const ticketType = request.data.ticketType ?? "free";
+    const today = getKstDate();
+    const statsRef = db.collection("dailyStats").doc(today);
     if (ticketType === "paid") {
       await Promise.all([
         quizRef.update({
@@ -110,6 +114,7 @@ exports.submitAnswer = onCall({ enforceAppCheck: false, invoker: "public" }, asy
           points: FieldValue.increment(1),
           attempts: FieldValue.increment(1),
         }),
+        statsRef.set({ wrongPaid: FieldValue.increment(1) }, { merge: true }),
       ]);
     } else {
       await Promise.all([
@@ -118,6 +123,7 @@ exports.submitAnswer = onCall({ enforceAppCheck: false, invoker: "public" }, asy
           activePlayers: FieldValue.increment(-1),
         }),
         userRef.update({ attempts: FieldValue.increment(1) }),
+        statsRef.set({ wrongFree: FieldValue.increment(1) }, { merge: true }),
       ]);
     }
     return { result: "wrong" };
@@ -128,6 +134,8 @@ exports.submitAnswer = onCall({ enforceAppCheck: false, invoker: "public" }, asy
     let totalGain = 0;
     let leveledUpTo = null;
     let claimNewbie = false;
+    const today = getKstDate();
+    const statsRef = db.collection("dailyStats").doc(today);
 
     await db.runTransaction(async (tx) => {
       const [qSnap, uSnap] = await Promise.all([
@@ -176,6 +184,11 @@ exports.submitAnswer = onCall({ enforceAppCheck: false, invoker: "public" }, asy
           tx.update(referrerRef, { points: FieldValue.increment(referrerGain) });
         }
       }
+
+      tx.set(statsRef, {
+        correct: FieldValue.increment(1),
+        bountyPaid: FieldValue.increment(totalGain),
+      }, { merge: true });
     });
 
     return { result: "correct", gain: totalGain, leveledUpTo };
