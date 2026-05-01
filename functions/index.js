@@ -1,7 +1,9 @@
 const { setGlobalOptions } = require("firebase-functions");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { getAuth } = require("firebase-admin/auth");
+const { getMessaging } = require("firebase-admin/messaging");
 const { initializeApp } = require("firebase-admin/app");
 const https = require("https");
 
@@ -199,3 +201,58 @@ exports.submitAnswer = onCall({ enforceAppCheck: false, invoker: "public" }, asy
     throw new HttpsError("internal", "정답 처리 오류");
   }
 });
+
+// 새 퀴즈 등록 시 전체 유저 FCM 푸시
+exports.onQuizCreated = onDocumentCreated(
+  { document: "quizzes/{quizId}", region: "asia-northeast3" },
+  async (event) => {
+    const quiz = event.data?.data();
+    if (!quiz) return;
+
+    // publishAt이 있으면 예약 공개라서 즉시 알림 X
+    if (quiz.publishAt) return;
+
+    const hint = quiz.hints?.[0] ?? "새 문제";
+    const bounty = quiz.bounty?.toLocaleString() ?? "?";
+
+    const usersSnap = await db.collection("users")
+      .where("fcmToken", "!=", null)
+      .get();
+
+    const tokens = usersSnap.docs.map((d) => d.data().fcmToken).filter(Boolean);
+    if (tokens.length === 0) return;
+
+    // 500개씩 배치 전송
+    const chunks = [];
+    for (let i = 0; i < tokens.length; i += 500) chunks.push(tokens.slice(i, i + 500));
+
+    await Promise.all(
+      chunks.map((batch) =>
+        getMessaging().sendEachForMulticast({
+          tokens: batch,
+          notification: {
+            title: `새 퀴즈 등록! 현상금 ${bounty}QW`,
+            body: `힌트: ${hint} — 지금 도전하세요!`,
+          },
+          webpush: {
+            notification: { icon: "/logo1.png" },
+            fcmOptions: { link: "/" },
+          },
+        })
+      )
+    );
+  }
+);
+
+// RTDB presence 삭제 시 activePlayers 감소
+// TODO: Firebase Console에서 Realtime Database 생성 후 아래 주석 해제 + 배포
+// exports.onPresenceDeleted = onValueDeleted(
+//   { ref: "presence/{quizId}/{uid}", region: "us-central1" },
+//   async (event) => {
+//     const { quizId } = event.params;
+//     const quizRef = db.collection("quizzes").doc(quizId);
+//     const snap = await quizRef.get();
+//     if (!snap.exists || snap.data()?.solvedBy) return;
+//     await quizRef.update({ activePlayers: FieldValue.increment(-1) });
+//   }
+// );

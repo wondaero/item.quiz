@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { collection, addDoc, getDocs, updateDoc, doc, Timestamp, orderBy, query, where, getCountFromServer } from 'firebase/firestore'
+import { collection, addDoc, getDocs, updateDoc, doc, Timestamp, orderBy, query, where, getCountFromServer, onSnapshot } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
 import './AdminPage.css'
@@ -71,6 +71,7 @@ export default function AdminPage() {
   const [giftAmount, setGiftAmount] = useState('')
   const [giftCards, setGiftCards] = useState([])
   const [exchangeRequests, setExchangeRequests] = useState([])
+  const [giftLoading, setGiftLoading] = useState(false)
 
   useEffect(() => { if (!isAdmin) navigate('/') }, [isAdmin, navigate])
 
@@ -78,6 +79,20 @@ export default function AdminPage() {
     if (!db) return
     const snap = await getDocs(query(collection(db, 'quizzes'), orderBy('createdAt', 'desc')))
     setQuizzes(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+  }, [])
+
+  const fetchGiftTab = useCallback(() => {
+    if (!db) return () => {}
+    setGiftLoading(true)
+    const unsubGift = onSnapshot(
+      query(collection(db, 'giftCards'), orderBy('createdAt', 'desc')),
+      (snap) => { setGiftCards(snap.docs.map((d) => ({ id: d.id, ...d.data() }))); setGiftLoading(false) }
+    )
+    const unsubExchange = onSnapshot(
+      query(collection(db, 'exchanges'), orderBy('requestedAt', 'desc')),
+      (snap) => setExchangeRequests(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    )
+    return () => { unsubGift(); unsubExchange() }
   }, [])
 
   const fetchDashboard = useCallback(async () => {
@@ -139,6 +154,7 @@ export default function AdminPage() {
 
   useEffect(() => { if (tab === 'quizzes' && !showForm) fetchQuizzes() }, [tab, showForm, fetchQuizzes])
   useEffect(() => { if (tab === 'dashboard') fetchDashboard() }, [tab, fetchDashboard])
+  useEffect(() => { if (tab === 'gift') return fetchGiftTab() }, [tab, fetchGiftTab])
   useEffect(() => {
     if (tab !== 'dashboard') return
     if (chartRange === 'custom' && (!customFrom || !customTo)) return
@@ -190,12 +206,25 @@ export default function AdminPage() {
   const removeAnswer = (i) => setAnswers((prev) => prev.filter((_, idx) => idx !== i))
   const updateAnswer = (i, val) => setAnswers((prev) => prev.map((a, idx) => idx === i ? val : a))
 
-  const handleAddGiftCard = () => {
+  const handleAddGiftCard = async () => {
     if (!giftCode.trim() || !giftAmount) return
-    setGiftCards((prev) => [...prev, { id: Date.now().toString(), code: giftCode.trim(), amount: Number(giftAmount), isUsed: false }])
+    await addDoc(collection(db, 'giftCards'), {
+      code: giftCode.trim(),
+      amount: Number(giftAmount),
+      isUsed: false,
+      createdAt: Timestamp.now(),
+    })
     setGiftCode('')
     setGiftAmount('')
     setShowForm(false)
+  }
+
+  const handleToggleGiftCard = async (g) => {
+    await updateDoc(doc(db, 'giftCards', g.id), { isUsed: !g.isUsed })
+  }
+
+  const handleCompleteExchange = async (r) => {
+    await updateDoc(doc(db, 'exchanges', r.id), { status: 'done', processedAt: Timestamp.now() })
   }
 
   const getHintsArray = () => hintsText.split('\n').map((h) => h.trim()).filter(Boolean).slice(0, 5)
@@ -460,46 +489,52 @@ export default function AdminPage() {
         ) : (
           <div className="gift-tab">
             <div className="tab-section-header">
-              <span>미발급 {giftCards.filter(g => !g.isUsed).length}개</span>
+              <span>미사용 {giftCards.filter(g => !g.isUsed).length}장</span>
               <button className="add-btn" onClick={() => setShowForm(true)}>+</button>
             </div>
-            <section>
-              <label>등록된 코드</label>
-              <div className="gift-list">
-                {giftCards.map((g) => (
-                  <div key={g.id} className={`gift-item ${g.isUsed ? 'used' : ''}`}>
-                    <span className="gift-code">{g.code}</span>
-                    <span className="gift-amount-tag">{g.amount.toLocaleString()}원</span>
-                    <span className={`gift-status ${g.isUsed ? 'used' : 'available'}`}>
-                      {g.isUsed ? '사용완료' : '미사용'}
-                    </span>
-                    <button
-                      className={`gift-toggle-btn ${g.isUsed ? 'revert' : 'issue'}`}
-                      onClick={() => setGiftCards((prev) => prev.map((c) => c.id === g.id ? { ...c, isUsed: !c.isUsed } : c))}
-                    >
-                      {g.isUsed ? '취소' : '사용완료'}
-                    </button>
+            {giftLoading ? <p className="empty-msg">불러오는 중...</p> : (
+              <>
+                <section>
+                  <label>등록된 코드</label>
+                  <div className="gift-list">
+                    {giftCards.map((g) => (
+                      <div key={g.id} className={`gift-item ${g.isUsed ? 'used' : ''}`}>
+                        <span className="gift-code">{g.code}</span>
+                        <span className="gift-amount-tag">{g.amount.toLocaleString()}원</span>
+                        <span className={`gift-status ${g.isUsed ? 'used' : 'available'}`}>
+                          {g.isUsed ? '사용완료' : '미사용'}
+                        </span>
+                        <button
+                          className={`gift-toggle-btn ${g.isUsed ? 'revert' : 'issue'}`}
+                          onClick={() => handleToggleGiftCard(g)}
+                        >
+                          {g.isUsed ? '취소' : '사용완료'}
+                        </button>
+                      </div>
+                    ))}
+                    {giftCards.length === 0 && <p className="empty-msg">등록된 상품권이 없습니다</p>}
                   </div>
-                ))}
-                {giftCards.length === 0 && <p className="empty-msg">등록된 상품권이 없습니다</p>}
-              </div>
-            </section>
-            <section>
-              <label>환전 신청</label>
-              <div className="gift-list">
-                {exchangeRequests.map((r) => (
-                  <div key={r.id} className={`gift-item ${r.status === 'done' ? 'used' : ''}`}>
-                    <span className="gift-code">{r.nickname}</span>
-                    <span className="gift-amount-tag">{r.amount.toLocaleString()}원</span>
-                    <span className="gift-date">{r.requestedAt}</span>
-                    {r.status === 'pending'
-                      ? <button className="gift-issue-btn">발급</button>
-                      : <span className="gift-status used">완료</span>}
+                </section>
+                <section>
+                  <label>환전 신청 ({exchangeRequests.filter(r => r.status === 'pending').length}건 대기)</label>
+                  <div className="gift-list">
+                    {exchangeRequests.map((r) => (
+                      <div key={r.id} className={`gift-item ${r.status === 'done' ? 'used' : ''}`}>
+                        <span className="gift-code">{r.uid?.slice(0, 8)}</span>
+                        <span className="gift-amount-tag">{r.amount.toLocaleString()}원</span>
+                        <span className="gift-date">
+                          {r.requestedAt?.toDate ? r.requestedAt.toDate().toLocaleDateString('ko-KR') : ''}
+                        </span>
+                        {r.status === 'pending'
+                          ? <button className="gift-issue-btn" onClick={() => handleCompleteExchange(r)}>발급완료</button>
+                          : <span className="gift-status used">완료</span>}
+                      </div>
+                    ))}
+                    {exchangeRequests.length === 0 && <p className="empty-msg">신청 없음</p>}
                   </div>
-                ))}
-                {exchangeRequests.length === 0 && <p className="empty-msg">신청 없음</p>}
-              </div>
-            </section>
+                </section>
+              </>
+            )}
           </div>
         )
       )}

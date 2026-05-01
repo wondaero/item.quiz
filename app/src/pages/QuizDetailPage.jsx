@@ -1,8 +1,9 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { doc, getDoc, updateDoc, increment, onSnapshot } from 'firebase/firestore'
+import { ref as rtdbRef, set, remove, onDisconnect } from 'firebase/database'
 import { httpsCallable } from 'firebase/functions'
-import { db, functions } from '../firebase/config'
+import { db, functions, rtdb } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
 import './QuizDetailPage.css'
 import { CURRENCY, DEV_ACCESS } from '../constants'
@@ -42,6 +43,7 @@ export default function QuizDetailPage() {
   const [submitting, setSubmitting] = useState(false)
   const [showQuitConfirm, setShowQuitConfirm] = useState(false)
   const [tipIndex, setTipIndex] = useState(0)
+  const presenceRef = useRef(null)
 
   useEffect(() => {
     if (!db) return
@@ -65,13 +67,12 @@ export default function QuizDetailPage() {
         || userData?.freeTicketLastUsed !== getTodayString()
 
       if (DEV_ACCESS.전체접근 || DEV_ACCESS.광고 || hasFree) {
-        // 무료권 있으면 바로 플레이
-        const type = (DEV_ACCESS.전체접근 || DEV_ACCESS.광고 || hasFree) && hasFree ? 'free' : 'paid'
         if (hasFree) {
           await updateDoc(doc(db, 'users', user.uid), { freeTicketLastUsed: getTodayString() })
           await updateDoc(doc(db, 'quizzes', id), { activePlayers: increment(1) })
           setLockedBounty(quizData.bounty)
           setTicketType('free')
+          registerPresence(id, user.uid)
           setPhase('play')
         } else {
           setPhase('ad')
@@ -81,7 +82,7 @@ export default function QuizDetailPage() {
       }
     }
     fetchData()
-  }, [id, user.uid])
+  }, [id, user.uid, registerPresence])
 
   // 팁 순환
   useEffect(() => {
@@ -97,6 +98,7 @@ export default function QuizDetailPage() {
     const unsub = onSnapshot(doc(db, 'quizzes', id), async (snap) => {
       const data = snap.data()
       if (data?.solvedBy && data.solvedBy !== user.uid) {
+        removePresence()
         const updates = [updateDoc(doc(db, 'quizzes', id), { activePlayers: increment(-1) })]
         if (ticketType === 'free') {
           updates.push(updateDoc(doc(db, 'users', user.uid), { freeTicketLastUsed: null }))
@@ -108,15 +110,32 @@ export default function QuizDetailPage() {
     return () => unsub()
   }, [phase, id, user.uid, ticketType])
 
+  const registerPresence = useCallback((quizId, uid) => {
+    if (!rtdb) return
+    const pRef = rtdbRef(rtdb, `presence/${quizId}/${uid}`)
+    presenceRef.current = pRef
+    set(pRef, true)
+    onDisconnect(pRef).remove()
+  }, [])
+
+  const removePresence = useCallback(() => {
+    if (presenceRef.current) {
+      remove(presenceRef.current)
+      presenceRef.current = null
+    }
+  }, [])
+
   const handleAdWatched = useCallback(async () => {
     // TODO: 실제 AdMob 광고 시청 완료 후 호출
     if (db) await updateDoc(doc(db, 'quizzes', id), { activePlayers: increment(1) })
     setLockedBounty(quiz.bounty)
     setTicketType('paid')
+    registerPresence(id, user.uid)
     setPhase('play')
-  }, [id, quiz])
+  }, [id, quiz, user.uid, registerPresence])
 
   const handleQuit = async () => {
+    removePresence()
     if (db) await updateDoc(doc(db, 'quizzes', id), { activePlayers: increment(-1) })
     navigate('/quiz')
   }
@@ -130,9 +149,12 @@ export default function QuizDetailPage() {
       const { data } = await submitAnswer({ quizId: id, answer, ticketType })
 
       if (data.result === 'already_solved') {
+        removePresence()
         setPhase('kicked')
         return
       }
+
+      removePresence()
 
       if (data.result === 'correct') {
         setLockedBounty(data.gain)

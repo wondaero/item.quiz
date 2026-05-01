@@ -1,7 +1,9 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { onAuthStateChanged } from 'firebase/auth'
-import { auth } from './firebase/config'
+import { getToken } from 'firebase/messaging'
+import { doc, updateDoc } from 'firebase/firestore'
+import { auth, db, getMessagingInstance } from './firebase/config'
 import useAuthStore from './store/useAuthStore'
 import { DEV_ACCESS } from './constants'
 
@@ -19,8 +21,21 @@ function PrivateRoute({ children }) {
   return user ? children : <Navigate to="/login" replace />
 }
 
+const registerFcmToken = async (uid) => {
+  if (!import.meta.env.VITE_FIREBASE_VAPID_KEY) return
+  try {
+    const messaging = await getMessagingInstance()
+    if (!messaging) return
+    const token = await getToken(messaging, { vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY })
+    if (token) await updateDoc(doc(db, 'users', uid), { fcmToken: token })
+  } catch {
+    // 알림 권한 거부 시 무시
+  }
+}
+
 export default function App() {
   const [authReady, setAuthReady] = useState(false)
+  const user = useAuthStore((s) => s.user)
 
   useEffect(() => {
     const ref = new URLSearchParams(window.location.search).get('ref')
@@ -31,6 +46,10 @@ export default function App() {
     const unsub = onAuthStateChanged(auth, () => setAuthReady(true))
     return unsub
   }, [])
+
+  useEffect(() => {
+    if (user?.uid) registerFcmToken(user.uid)
+  }, [user?.uid])
 
   if (!authReady) return null
 

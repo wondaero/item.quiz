@@ -1,0 +1,13 @@
+{
+  "rules": {
+    "presence": {
+      "$quizId": {
+        "$uid": {
+          ".read": false,
+          ".write": "auth != null && auth.uid == $uid",
+          ".onDisconnect": true
+        }
+      }
+    }
+  }
+}
