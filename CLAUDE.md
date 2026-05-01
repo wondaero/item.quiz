@@ -107,6 +107,34 @@
   - 퀴즈 등록 시 `initialBounty` 필드 저장
   - 대시보드 탭: 전체/진행중/종료/흑자/적자 문제 수 + 토탈 손익 카드 6개로 요약
   - 손익 계산: `(bounty - initialBounty) - initialBounty`
+- **수익 그래프 추가** (AdminPage 대시보드):
+  - `dailyStats/{YYYY-MM-DD}` 일별 집계 — `wrongPaid`(수익) / `wrongFree` / `correct` / `bountyPaid`(지출)
+  - `submitAnswer` CF에서 오답/정답 처리 시 자동 집계
+  - recharts 곡선 그래프, 7일/1달/3달/1년/전체/커스텀 기간 선택
+- **상품권/환전 Firestore 실 연결** (AdminPage):
+  - `giftCards` 컬렉션 onSnapshot 실시간 연결
+  - `exchanges` 컬렉션 onSnapshot 실시간 연결
+  - 환전 "발급완료" 버튼 → Firestore `status: 'done'` 업데이트
+  - `adminAlerts` stock_request 타입 표시 (재고 신청)
+- **ExchangePage 재고 표시**:
+  - 금액 버튼에 잔여 재고 장수 표시 (n장 / 품절)
+  - 품절 + 포인트 충분 시 "품절 신청" 버튼 → `adminAlerts` 저장
+  - 품절 + 포인트 부족 시 "포인트 부족" 비활성 버튼
+- **FCM 웹 푸시 알림**:
+  - `firebase-messaging-sw.js` 서비스워커 추가
+  - 로그인 후 FCM 토큰 `users.fcmToken` 저장
+  - `onQuizCreated` CF — 새 퀴즈 등록 시 전체 유저 푸시 발송
+  - VAPID 키: Vercel 환경변수 `VITE_FIREBASE_VAPID_KEY` 설정 완료
+- **RTDB presence (activePlayers onDisconnect)**:
+  - Firebase Realtime Database 생성 (asia-southeast1)
+  - 플레이 진입 시 `presence/{quizId}/{uid}` 등록 + onDisconnect 설정
+  - `onPresenceDeleted` CF (asia-southeast1) — presence 삭제 시 activePlayers 감소
+  - `VITE_FIREBASE_DATABASE_URL` Vercel 환경변수 설정 완료
+- **App.jsx 로딩 화면**: `authReady` 대기 중 스피너 + 랜덤 팁 문구 표시
+- **Firestore rules 강화**:
+  - `quizzes` — admin create/update 전부 허용
+  - `adminAlerts` — admin 읽기 허용
+  - `isAdmin()` 헬퍼 함수 추가 (`request.auth.uid == '4833965068'`)
 
 ### DEV_ACCESS (개발용 우회)
 `constants.js`의 DEV_ACCESS — `import.meta.env.DEV` 기반, 빌드 시 자동 제거됨
@@ -119,7 +147,8 @@
 - **App 래핑**: Capacitor (Android/iOS)
 - **DB**: Firebase Firestore
 - **Auth**: 카카오 로그인 → Firebase Custom Token (`createCustomToken(kakaoId)`) — uid = 카카오 ID
-- **Cloud Functions**: `functions/index.js` — `kakaoLogin` + `submitAnswer` 배포 완료 (asia-northeast3)
+- **Cloud Functions**: `kakaoLogin` + `submitAnswer` + `onQuizCreated` (asia-northeast3) + `onPresenceDeleted` (asia-southeast1)
+- **RTDB**: Firebase Realtime Database (asia-southeast1) — presence 관리용
 - **상태관리**: Zustand (localStorage 지속)
 - **라우팅**: React Router DOM
 - **광고**: AdMob (보상형, 추후 연동)
@@ -149,9 +178,10 @@ app/
 │   └── main.jsx                        # 테마 import 위치
 ├── .env                                # 실 키값 입력 완료
 functions/
-├── index.js                            # kakaoLogin + submitAnswer Cloud Function (배포 완료)
+├── index.js                            # kakaoLogin + submitAnswer + onQuizCreated + onPresenceDeleted
 ├── package.json
 firestore.rules                         # 보안 규칙 (배포 완료)
+database.rules.json                     # RTDB 보안 규칙
 firebase.json
 ```
 
@@ -236,23 +266,13 @@ firebase.json
 ## 남은 작업
 
 ### 급한 것 (다음 세션)
-- [ ] Vercel 배포 + 엔드투엔드 테스트: 로그인 → 퀴즈 → 제출 → 포인트 확인
-- [ ] 카카오 개발자 콘솔 → 동의항목 → 닉네임 **필수동의** 설정 (현재 "익명"으로 뜸)
-- [ ] 다른 계정으로 동일 uid 유지 여부 확인 (크로스 디바이스 테스트)
+- [ ] 테스트 이슈 정리 후 버그 픽스
+- [ ] 로딩 화면 — 느린 페이지 파악 후 적용
 
 ### 나랑 같이 해야 할 것
-- [ ] AdminPage 상품권 관리 — Firebase 실 연결 (목업 제거됨, 빈 배열 상태)
-- [ ] AdminPage 환전 신청 — Firebase 실 연결 (목업 제거됨, 빈 배열 상태)
-- [ ] ExchangePage(상점) — 현재 환전 신청만 있음, 추후 기능 확장 가능
-- [ ] 환전 신청 재고 부족 시 관리자 알림 (adminAlerts + onSnapshot)
-- [ ] Cloud Functions 추가:
-  - ~~카카오 토큰 → Firebase Custom Token~~ (완료)
-  - 환전 신청 시 관리자 FCM 푸시 알림
-  - 새 퀴즈 등록 시 전체 유저 FCM 푸시 알림 (리텐션 핵심)
-  - activePlayers onDisconnect 처리
+- [ ] 환전 신청 시 관리자 FCM 푸시 알림 (새 퀴즈는 완료, 환전은 미구현)
 - [ ] /settings 페이지 구현 (라우트만 있음)
 - [ ] AdMob 보상형 광고 연동 (handleAdWatched에 TODO, Android 빌드 후)
-- [ ] FCM 푸시알림
 - [ ] Capacitor Android 빌드 테스트
 
 ### 보류 아이디어

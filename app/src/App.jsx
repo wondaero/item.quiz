@@ -7,6 +7,13 @@ import { auth, db, getMessagingInstance } from './firebase/config'
 import useAuthStore from './store/useAuthStore'
 import { DEV_ACCESS } from './constants'
 
+const AD_TIPS = [
+  '정답이 돈이다',
+  '도전자가 많을수록 현상금은 커진다',
+  '틀려도 괜찮아요, 현상금만 올라갈 뿐',
+  '친구 초대하고 또 벌고',
+]
+
 const IntroPage = lazy(() => import('./pages/IntroPage'))
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const QuizListPage = lazy(() => import('./pages/QuizListPage'))
@@ -35,6 +42,7 @@ const registerFcmToken = async (uid) => {
 
 export default function App() {
   const [authReady, setAuthReady] = useState(false)
+  const [tipIndex] = useState(() => Math.floor(Math.random() * AD_TIPS.length))
   const user = useAuthStore((s) => s.user)
 
   useEffect(() => {
@@ -47,11 +55,17 @@ export default function App() {
     return unsub
   }, [])
 
+
   useEffect(() => {
     if (user?.uid) registerFcmToken(user.uid)
   }, [user?.uid])
 
-  if (!authReady) return null
+  if (!authReady) return (
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24 }}>
+      <div className="spinner" />
+      <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{AD_TIPS[tipIndex]}</p>
+    </div>
+  )
 
   return (
     <BrowserRouter>
