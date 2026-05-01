@@ -72,6 +72,7 @@ export default function AdminPage() {
   const [giftCards, setGiftCards] = useState([])
   const [exchangeRequests, setExchangeRequests] = useState([])
   const [giftLoading, setGiftLoading] = useState(false)
+  const [stockRequests, setStockRequests] = useState([])
 
   useEffect(() => { if (!isAdmin) navigate('/') }, [isAdmin, navigate])
 
@@ -92,7 +93,11 @@ export default function AdminPage() {
       query(collection(db, 'exchanges'), orderBy('requestedAt', 'desc')),
       (snap) => setExchangeRequests(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     )
-    return () => { unsubGift(); unsubExchange() }
+    const unsubAlerts = onSnapshot(
+      query(collection(db, 'adminAlerts'), where('type', '==', 'stock_request'), orderBy('createdAt', 'desc')),
+      (snap) => setStockRequests(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    )
+    return () => { unsubGift(); unsubExchange(); unsubAlerts() }
   }, [])
 
   const fetchDashboard = useCallback(async () => {
@@ -515,6 +520,22 @@ export default function AdminPage() {
                     {giftCards.length === 0 && <p className="empty-msg">등록된 상품권이 없습니다</p>}
                   </div>
                 </section>
+                {stockRequests.length > 0 && (
+                  <section>
+                    <label>재고 신청 ({stockRequests.length}건)</label>
+                    <div className="gift-list">
+                      {stockRequests.map((r) => (
+                        <div key={r.id} className="gift-item">
+                          <span className="gift-code">{r.nickname}</span>
+                          <span className="gift-amount-tag">{r.amount.toLocaleString()}원권</span>
+                          <span className="gift-date">
+                            {r.createdAt?.toDate ? r.createdAt.toDate().toLocaleDateString('ko-KR') : ''}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
                 <section>
                   <label>환전 신청 ({exchangeRequests.filter(r => r.status === 'pending').length}건 대기)</label>
                   <div className="gift-list">

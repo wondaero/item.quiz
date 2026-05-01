@@ -97,7 +97,7 @@
 }
 
 .amount-opt {
-  padding: 16px 0;
+  padding: 14px 0;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -105,6 +105,26 @@
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stock-badge {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.stock-badge.out {
+  color: #f87171;
+}
+
+.btn-request {
+  background: var(--bg-card);
+  color: var(--primary);
+  border: 1px solid var(--primary);
 }
 
 .amount-opt.selected {

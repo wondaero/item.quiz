@@ -41,7 +41,8 @@ service cloud.firestore {
     // 관리자 알림
     match /adminAlerts/{alertId} {
       allow create: if true;
-      allow read, update, delete: if false; // 콘솔에서 직접 확인
+      allow read: if isAdmin();
+      allow update, delete: if false;
     }
 
     // --- 헬퍼 함수 ---

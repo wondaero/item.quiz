@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { doc, getDoc, addDoc, updateDoc, collection, Timestamp, increment, runTransaction } from 'firebase/firestore'
+import { doc, getDoc, addDoc, getDocs, collection, query, where, Timestamp, increment, runTransaction } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
 import { CURRENCY } from '../constants'
@@ -12,16 +12,27 @@ export default function ExchangePage() {
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   const [userData, setUserData] = useState(null)
+  const [stock, setStock] = useState({})
   const [amount, setAmount] = useState(null)
   const [submitted, setSubmitted] = useState(false)
+  const [submittedType, setSubmittedType] = useState(null) // 'exchange' | 'request'
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (!user || !db) return
     const fetch = async () => {
-      const snap = await getDoc(doc(db, 'users', user.uid))
-      if (snap.exists()) setUserData(snap.data())
+      const [userSnap, giftSnap] = await Promise.all([
+        getDoc(doc(db, 'users', user.uid)),
+        getDocs(query(collection(db, 'giftCards'), where('isUsed', '==', false))),
+      ])
+      if (userSnap.exists()) setUserData(userSnap.data())
+      const counts = {}
+      giftSnap.docs.forEach((d) => {
+        const amt = d.data().amount
+        counts[amt] = (counts[amt] ?? 0) + 1
+      })
+      setStock(counts)
       setLoading(false)
     }
     fetch()
@@ -48,10 +59,31 @@ export default function ExchangePage() {
         })
         transaction.update(userRef, { points: increment(-amount) })
       })
+      setSubmittedType('exchange')
       setSubmitted(true)
     } catch (e) {
       if (e.message === 'INSUFFICIENT_POINTS') alert('포인트가 부족합니다')
       else console.error('환전 신청 오류', e)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleStockRequest = async () => {
+    if (!amount) { alert('상품권을 선택하세요'); return }
+    setSubmitting(true)
+    try {
+      await addDoc(collection(db, 'adminAlerts'), {
+        type: 'stock_request',
+        amount,
+        uid: user.uid,
+        nickname: user.nickname ?? '유저',
+        createdAt: Timestamp.now(),
+      })
+      setSubmittedType('request')
+      setSubmitted(true)
+    } catch (e) {
+      console.error('재고 신청 오류', e)
     } finally {
       setSubmitting(false)
     }
@@ -68,9 +100,9 @@ export default function ExchangePage() {
 
       {submitted ? (
         <div className="exchange-success">
-          <div className="success-icon">✅</div>
-          <h3>환전 신청 완료</h3>
-          <p>관리자 확인 후 상품권이 지급됩니다</p>
+          <div className="success-icon">{submittedType === 'request' ? '🔔' : '✅'}</div>
+          <h3>{submittedType === 'request' ? '재고 신청 완료' : '환전 신청 완료'}</h3>
+          <p>{submittedType === 'request' ? '관리자에게 알림이 전송됐어요. 재고 확보 후 안내드립니다.' : '관리자 확인 후 상품권이 지급됩니다'}</p>
           <button className="btn-primary" onClick={() => navigate('/my')}>내 정보로</button>
         </div>
       ) : (
@@ -88,21 +120,38 @@ export default function ExchangePage() {
           <div className="amount-options">
             {AMOUNT_OPTIONS.map((opt) => {
               const affordable = opt <= (userData?.points ?? 0)
+              const hasStock = (stock[opt] ?? 0) > 0
               return (
                 <button
                   key={opt}
                   className={`amount-opt ${amount === opt ? 'selected' : ''} ${!affordable ? 'disabled' : ''}`}
                   onClick={() => affordable && setAmount(opt)}
                 >
-                  {opt.toLocaleString()}원
+                  <span>{opt.toLocaleString()}원</span>
+                  <span className={`stock-badge ${!hasStock ? 'out' : ''}`}>
+                    {hasStock ? `${stock[opt]}장` : '품절'}
+                  </span>
                 </button>
               )
             })}
           </div>
 
-          {amount && <p className="exchange-preview">{amount.toLocaleString()} {CURRENCY} → {amount.toLocaleString()}원 상품권</p>}
+          {amount && (
+            <p className="exchange-preview">
+              {amount.toLocaleString()} {CURRENCY} → {amount.toLocaleString()}원 상품권
+              {!(stock[amount] > 0) && ' · 현재 품절'}
+            </p>
+          )}
 
-          <button className="btn-primary" onClick={handleExchange} disabled={submitting}>{submitting ? '신청 중...' : '환전 신청'}</button>
+          {amount && !(stock[amount] > 0) ? (
+            <button className="btn-primary btn-request" onClick={handleStockRequest} disabled={submitting}>
+              {submitting ? '신청 중...' : '재고 신청하기'}
+            </button>
+          ) : (
+            <button className="btn-primary" onClick={handleExchange} disabled={submitting || !amount}>
+              {submitting ? '신청 중...' : '환전 신청'}
+            </button>
+          )}
         </div>
       )}
     </div>
