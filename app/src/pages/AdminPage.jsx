@@ -1,11 +1,20 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { collection, addDoc, getDocs, updateDoc, doc, Timestamp, orderBy, query, where, getCountFromServer, onSnapshot } from 'firebase/firestore'
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, Timestamp, orderBy, query, where, getCountFromServer, onSnapshot } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
 import './AdminPage.css'
 import { CURRENCY } from '../constants'
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts'
+import { HiArrowPath } from 'react-icons/hi2'
+
+function fmtNum(n) {
+  const abs = Math.abs(n)
+  const sign = n < 0 ? '-' : '+'
+  if (abs >= 100_000_000) return `${sign}${(abs / 100_000_000).toFixed(1)}억`
+  if (abs >= 10_000) return `${sign}${(abs / 10_000).toFixed(1)}만`
+  return (n >= 0 ? '+' : '') + n.toLocaleString()
+}
 
 const BOUNTY_OPTIONS = [500, 1000, 2000, 3000, 5000]
 const POINT_TIERS = [2500, 5000, 10000, 20000]
@@ -53,6 +62,7 @@ export default function AdminPage() {
   const [customTo, setCustomTo] = useState('')
   const [chartData, setChartData] = useState([])
   const [chartLoading, setChartLoading] = useState(false)
+  const [pnlExpanded, setPnlExpanded] = useState(false)
 
   const [isHtml, setIsHtml] = useState(false)
   const [hintsText, setHintsText] = useState('')
@@ -68,7 +78,7 @@ export default function AdminPage() {
   const [submitting, setSubmitting] = useState(false)
 
   const [giftCode, setGiftCode] = useState('')
-  const [giftAmount, setGiftAmount] = useState('')
+  const [giftAmount, setGiftAmount] = useState('3000')
   const [giftCards, setGiftCards] = useState([])
   const [exchangeRequests, setExchangeRequests] = useState([])
   const [giftLoading, setGiftLoading] = useState(false)
@@ -211,6 +221,12 @@ export default function AdminPage() {
   const removeAnswer = (i) => setAnswers((prev) => prev.filter((_, idx) => idx !== i))
   const updateAnswer = (i, val) => setAnswers((prev) => prev.map((a, idx) => idx === i ? val : a))
 
+  const handleDeleteQuiz = async (e, quiz) => {
+    e.stopPropagation()
+    if (!window.confirm(`문제 #${quiz.id.slice(0, 6)}를 삭제할까요?\n이 작업은 되돌릴 수 없습니다.`)) return
+    await deleteDoc(doc(db, 'quizzes', quiz.id))
+  }
+
   const handleAddGiftCard = async () => {
     if (!giftCode.trim() || !giftAmount) return
     await addDoc(collection(db, 'giftCards'), {
@@ -220,7 +236,7 @@ export default function AdminPage() {
       createdAt: Timestamp.now(),
     })
     setGiftCode('')
-    setGiftAmount('')
+    setGiftAmount('3000')
     setShowForm(false)
   }
 
@@ -300,7 +316,7 @@ export default function AdminPage() {
   return (
     <div className="admin-page">
       <header className="admin-header">
-        <button className="back-btn" onClick={() => navigate(-1)}><ChevronLeft /></button>
+        <button className="back-btn" onClick={() => showForm ? (tab === 'gift' ? setShowForm(false) : closeForm()) : navigate(-1)}><ChevronLeft /></button>
         <h2>Admin</h2>
       </header>
 
@@ -313,8 +329,6 @@ export default function AdminPage() {
       {tab === 'quizzes' && (
         showForm ? (
           <div className="create-tab">
-            <button className="back-form-btn" onClick={closeForm}><ChevronLeft /> 목록으로</button>
-
             <div className="mode-toggle">
               <button className={`mode-btn ${!isHtml ? 'active' : ''}`} onClick={() => { setIsHtml(false); setHintsText(''); setShowHtmlPreview(false) }}>글자</button>
               <button className={`mode-btn ${isHtml ? 'active' : ''}`} onClick={() => { setIsHtml(true); setHintsText(''); setShowHtmlPreview(false) }}>HTML</button>
@@ -448,15 +462,14 @@ export default function AdminPage() {
           <div className="quizzes-tab">
             <div className="tab-section-header">
               <span>문제 목록 ({quizzes.length})</span>
-              <button className="add-btn" onClick={openCreate}>+</button>
             </div>
             {quizzes.map((q) => (
-              <div key={q.id} className={`admin-quiz-card ${q.solvedBy ? 'solved' : ''}`}>
+              <div key={q.id} className={`admin-quiz-card ${q.solvedBy ? 'solved' : ''}`} onClick={() => !q.solvedBy && openEdit(q)} style={{ cursor: q.solvedBy ? 'default' : 'pointer' }}>
                 <div className="admin-quiz-card-top">
                   <span className="admin-quiz-id">#{q.id.slice(0, 6)}</span>
                   {q.createdAt && <span className="admin-quiz-date">{formatCreatedAt(q.createdAt)}</span>}
-                  {!q.solvedBy && <button className="edit-quiz-btn" onClick={() => openEdit(q)}>수정</button>}
                   {q.solvedBy && <span className="solved-tag">종료</span>}
+                  <button className="delete-quiz-btn" onClick={(e) => handleDeleteQuiz(e, q)}>✕</button>
                 </div>
                 <div className="admin-quiz-card-hints">
                   <HintsPreview hints={q.hints ?? []} isHtml={q.isHtml} />
@@ -481,12 +494,11 @@ export default function AdminPage() {
       {tab === 'gift' && (
         showForm ? (
           <div className="gift-tab">
-            <button className="back-form-btn" onClick={() => setShowForm(false)}><ChevronLeft /> 목록으로</button>
             <section>
               <label>상품권 코드 등록</label>
               <div className="gift-input-row">
                 <input className="answer-field" value={giftCode} onChange={(e) => setGiftCode(e.target.value)} placeholder="상품권 코드" />
-                <input className="answer-field gift-amount" type="number" value={giftAmount} onChange={(e) => setGiftAmount(e.target.value)} placeholder="금액" />
+                <input className="answer-field gift-amount" type="number" value={giftAmount} onChange={(e) => setGiftAmount(e.target.value)} onFocus={(e) => e.target.select()} placeholder="금액" />
                 <button className="gift-add-btn" onClick={handleAddGiftCard}>추가</button>
               </div>
             </section>
@@ -495,7 +507,6 @@ export default function AdminPage() {
           <div className="gift-tab">
             <div className="tab-section-header">
               <span>미사용 {giftCards.filter(g => !g.isUsed).length}장</span>
-              <button className="add-btn" onClick={() => setShowForm(true)}>+</button>
             </div>
             {giftLoading ? <p className="empty-msg">불러오는 중...</p> : (
               <>
@@ -537,21 +548,19 @@ export default function AdminPage() {
                   </section>
                 )}
                 <section>
-                  <label>환전 신청 ({exchangeRequests.filter(r => r.status === 'pending').length}건 대기)</label>
+                  <label>환전 내역</label>
                   <div className="gift-list">
                     {exchangeRequests.map((r) => (
-                      <div key={r.id} className={`gift-item ${r.status === 'done' ? 'used' : ''}`}>
+                      <div key={r.id} className="gift-item used">
                         <span className="gift-code">{r.uid?.slice(0, 8)}</span>
                         <span className="gift-amount-tag">{r.amount.toLocaleString()}원</span>
                         <span className="gift-date">
                           {r.requestedAt?.toDate ? r.requestedAt.toDate().toLocaleDateString('ko-KR') : ''}
                         </span>
-                        {r.status === 'pending'
-                          ? <button className="gift-issue-btn" onClick={() => handleCompleteExchange(r)}>발급완료</button>
-                          : <span className="gift-status used">완료</span>}
+                        <span className="gift-status used">완료</span>
                       </div>
                     ))}
-                    {exchangeRequests.length === 0 && <p className="empty-msg">신청 없음</p>}
+                    {exchangeRequests.length === 0 && <p className="empty-msg">내역 없음</p>}
                   </div>
                 </section>
               </>
@@ -562,10 +571,6 @@ export default function AdminPage() {
 
       {tab === 'dashboard' && (
         <div className="dashboard-tab">
-          <div className="dash-section-header">
-            <span>대시보드</span>
-            <button className="preview-btn" onClick={fetchDashboard}>새로고침</button>
-          </div>
 
           <section>
             <label>수익 그래프</label>
@@ -589,8 +594,8 @@ export default function AdminPage() {
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={chartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} interval="preserveStartEnd" />
-                  <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'var(--text-sub)' }} interval="preserveStartEnd" />
+                  <YAxis tick={{ fontSize: 11, fill: 'var(--text-sub)' }} />
                   <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }} />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
                   <Line type="monotone" dataKey="수익" stroke="var(--primary)" strokeWidth={2} dot={false} />
@@ -682,8 +687,10 @@ export default function AdminPage() {
                           <span className="dash-count">{lossCount}</span>
                           <span className="dash-label">적자 문제</span>
                         </div>
-                        <div className={`dash-card ${totalPnl >= 0 ? 'profit' : 'warning'}`}>
-                          <span className="dash-count">{totalPnl >= 0 ? '+' : ''}{totalPnl.toLocaleString()}</span>
+                        <div className="dash-card" style={{ cursor: 'pointer' }} onClick={() => setPnlExpanded(v => !v)}>
+                          <span className="dash-count" style={{ color: totalPnl < 0 ? '#f87171' : undefined, fontSize: pnlExpanded ? '1.1rem' : undefined }}>
+                            {pnlExpanded ? (totalPnl >= 0 ? '+' : '') + totalPnl.toLocaleString() : fmtNum(totalPnl)}
+                          </span>
                           <span className="dash-label">토탈 손익 ({CURRENCY})</span>
                         </div>
                       </div>
@@ -705,6 +712,15 @@ export default function AdminPage() {
             <p className="empty-msg">새로고침을 눌러 불러오세요</p>
           )}
         </div>
+      )}
+      {tab === 'quizzes' && !showForm && (
+        <button className="admin-fab" onClick={openCreate}>+</button>
+      )}
+      {tab === 'dashboard' && (
+        <button className="admin-fab" onClick={fetchDashboard}><HiArrowPath /></button>
+      )}
+      {tab === 'gift' && !showForm && (
+        <button className="admin-fab" onClick={() => setShowForm(true)}>+</button>
       )}
     </div>
   )

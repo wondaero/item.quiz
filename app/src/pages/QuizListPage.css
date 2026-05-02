@@ -23,7 +23,7 @@
 .quiz-list-header h2 {
   font-size: 1.4rem;
   margin: 0;
-  color: var(--primary);
+  color: var(--text);
 }
 
 .header-controls {

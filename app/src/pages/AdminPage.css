@@ -11,7 +11,7 @@
   z-index: 100;
   background: var(--bg);
   padding: 0 20px;
-  margin: 0 -20px 20px;
+  margin: 0 -20px 0;
   height: 56px;
   display: flex;
   align-items: center;
@@ -21,7 +21,7 @@
 
 .admin-header h2 {
   margin: 0;
-  color: var(--primary);
+  color: var(--text);
 }
 
 .back-btn {
@@ -37,6 +37,13 @@
   gap: 0;
   margin-bottom: 24px;
   border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 56px;
+  z-index: 99;
+  background: var(--bg);
+  margin-left: -20px;
+  margin-right: -20px;
+  padding: 0 20px;
 }
 
 .tab-bar button {
@@ -81,6 +88,8 @@
 
 .hint-row input, .answer-field {
   flex: 1;
+  width: 100%;
+  box-sizing: border-box;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -155,6 +164,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding-bottom: 88px;
 }
 
 .admin-quiz-card {
@@ -166,6 +176,21 @@
 
 .admin-quiz-card.solved {
   opacity: 0.4;
+}
+
+.delete-quiz-btn {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+}
+
+.delete-quiz-btn:hover {
+  color: #f87171;
 }
 
 .edit-quiz-btn {
@@ -198,14 +223,31 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  padding-bottom: 88px;
 }
 
-.dash-section-header {
+.dashboard-tab section > label {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.admin-fab {
+  position: fixed;
+  bottom: 28px;
+  right: 24px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--btn-text);
+  border: none;
+  font-size: 1.4rem;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  font-size: 0.85rem;
-  color: var(--text-sub);
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  z-index: 200;
 }
 
 .dash-grid {
@@ -547,6 +589,7 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  padding-bottom: 88px;
 }
 
 .gift-tab section {
@@ -557,12 +600,12 @@
 
 .gift-input-row {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .gift-amount {
-  width: 100px;
-  flex: none;
+  width: 100%;
 }
 
 .gift-add-btn {
@@ -570,10 +613,10 @@
   color: var(--btn-text);
   border: none;
   border-radius: 8px;
-  padding: 0 16px;
+  padding: 14px;
   font-weight: 700;
+  font-size: 0.95rem;
   cursor: pointer;
-  white-space: nowrap;
   box-shadow: 0 0 8px var(--primary);
 }
 

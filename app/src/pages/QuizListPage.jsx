@@ -53,8 +53,6 @@ export default function QuizListPage() {
     return unsub
   }, [setQuizzesCache])
 
-  if (loading) return <PageLoading />
-
   const sorted = useMemo(() => {
     const now = new Date()
     return [...quizzes]
@@ -69,6 +67,8 @@ export default function QuizListPage() {
       })
       .sort((a, b) => sortAsc ? a.bounty - b.bounty : b.bounty - a.bounty)
   }, [quizzes, sortAsc, filter])
+
+  if (loading) return <PageLoading />
 
   return (
     <div className="quiz-list-page">

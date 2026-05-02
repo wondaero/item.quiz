@@ -21,6 +21,7 @@ const QuizDetailPage = lazy(() => import('./pages/QuizDetailPage'))
 const MyPage = lazy(() => import('./pages/MyPage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
 const ExchangePage = lazy(() => import('./pages/ExchangePage'))
+const VaultPage = lazy(() => import('./pages/VaultPage'))
 
 function PrivateRoute({ children }) {
   const user = useAuthStore((s) => s.user)
@@ -92,6 +93,7 @@ export default function App() {
           <Route path="/my" element={<PrivateRoute><MyPage /></PrivateRoute>} />
           <Route path="/admin" element={<PrivateRoute><AdminPage /></PrivateRoute>} />
           <Route path="/exchange" element={<PrivateRoute><ExchangePage /></PrivateRoute>} />
+          <Route path="/vault" element={<PrivateRoute><VaultPage /></PrivateRoute>} />
         </Routes>
       </Suspense>
     </BrowserRouter>

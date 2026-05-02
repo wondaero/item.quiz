@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '../store/useAuthStore'
 import { CURRENCY, calcLevel, LEVEL_THRESHOLDS } from '../constants'
@@ -14,6 +14,7 @@ export default function MyPage() {
   const userData = useAuthStore((s) => s.userData)
   const navigate = useNavigate()
   const loading = !userData
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
   const today = new Date().toISOString().slice(0, 10)
   const hasFreeTicket = userData?.freeTicketLastUsed !== today
@@ -90,9 +91,22 @@ export default function MyPage() {
         {isAdmin && (
           <button className="action-btn admin" onClick={() => navigate('/admin')}>Admin 페이지</button>
         )}
-        <button className="action-btn" onClick={() => navigate('/exchange')}>상점 · 환전</button>
-        <button className="action-btn logout" onClick={handleLogout}>로그아웃</button>
+        <button className="action-btn" onClick={() => navigate('/vault')}>상품권 창고</button>
+        <button className="action-btn logout" onClick={() => setShowLogoutConfirm(true)}>로그아웃</button>
       </div>
+
+      {showLogoutConfirm && (
+        <div className="confirm-overlay" onClick={() => setShowLogoutConfirm(false)}>
+          <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="confirm-title">로그아웃</p>
+            <p className="confirm-desc">정말 로그아웃 하시겠어요?</p>
+            <div className="confirm-btns">
+              <button className="confirm-cancel" onClick={() => setShowLogoutConfirm(false)}>취소</button>
+              <button className="confirm-ok" onClick={handleLogout}>로그아웃</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

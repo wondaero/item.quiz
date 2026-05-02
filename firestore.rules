@@ -3,24 +3,19 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 퀴즈 - 누구나 읽기, 관리자 전체 쓰기, 일반 업데이트는 필드 제한
+    // 퀴즈 - 누구나 읽기, 관리자 전체 쓰기/삭제, 일반 업데이트는 필드 제한
     match /quizzes/{quizId} {
       allow read: if true;
-
-      // 관리자: 생성/수정 전부 허용
       allow create: if isAdmin();
       allow update: if isAdmin()
                     || (onlyUpdatingFields(['bounty', 'challengers', 'wrongAnswers',
                                            'solvedBy', 'solvedAt', 'activePlayers'])
                         && incomingBounty()
                         && incomingActivePlayers());
-
-      // 삭제 불가
-      allow delete: if false;
+      allow delete: if isAdmin();
     }
 
-    // 유저 문서 - 누구나 읽기/쓰기 (Firebase Auth 미연동으로 인한 임시)
-    // TODO: Custom Token 연동 후 request.auth.uid == userId 조건 추가
+    // 유저 문서
     match /users/{userId} {
       allow read: if true;
       allow create: if validUserCreate();
@@ -28,22 +23,16 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // 상품권
+    // 상품권 — 클라이언트 완전 차단 (CF Admin SDK만 접근)
     match /giftCards/{cardId} {
-      allow read: if isAdmin();
-      allow create: if isAdmin();
-      allow update: if isAdmin();
-      allow delete: if false;
+      allow read: if false;
+      allow write: if false;
     }
 
-    // 환전 신청
+    // 환전 내역 — 본인 것만 읽기, 쓰기는 CF에서만
     match /exchanges/{exchangeId} {
-      allow read: if true;
-      allow create: if request.resource.data.keys().hasAll(['uid', 'amount', 'status', 'requestedAt'])
-                    && request.resource.data.status == 'pending'
-                    && request.resource.data.amount >= 20000;
-      allow update: if isAdmin();
-      allow delete: if false;
+      allow read: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow write: if false;
     }
 
     // 관리자 알림
@@ -51,6 +40,12 @@ service cloud.firestore {
       allow create: if true;
       allow read: if isAdmin();
       allow update, delete: if false;
+    }
+
+    // 일별 통계 — 읽기 전용 공개
+    match /dailyStats/{date} {
+      allow read: if true;
+      allow write: if false;
     }
 
     // --- 헬퍼 함수 ---

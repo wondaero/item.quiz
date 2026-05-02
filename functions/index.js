@@ -245,6 +245,78 @@ exports.onQuizCreated = onDocumentCreated(
   }
 );
 
+const VALID_AMOUNTS = [3000, 5000, 10000, 20000];
+
+// 상품권 재고 조회 (코드 미포함, 공개용)
+exports.getGiftStock = onCall({ enforceAppCheck: false, invoker: "public" }, async () => {
+  const snap = await db.collection("giftCards").where("isUsed", "==", false).get();
+  const counts = {};
+  snap.docs.forEach((d) => {
+    const amt = d.data().amount;
+    counts[amt] = (counts[amt] ?? 0) + 1;
+  });
+  return counts;
+});
+
+// 환전 신청 — 서버 트랜잭션으로 원자적 처리
+exports.requestExchange = onCall({ enforceAppCheck: false, invoker: "public" }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "LOGIN_REQUIRED");
+
+  const amount = Number(request.data?.amount);
+  if (!VALID_AMOUNTS.includes(amount)) throw new HttpsError("invalid-argument", "INVALID_AMOUNT");
+
+  const userRef = db.collection("users").doc(uid);
+
+  // 트랜잭션 외부에서 사용 가능한 상품권 조회 (쿼리는 트랜잭션 내 불가)
+  const available = await db.collection("giftCards")
+    .where("amount", "==", amount)
+    .where("isUsed", "==", false)
+    .limit(1)
+    .get();
+
+  if (available.empty) throw new HttpsError("unavailable", "OUT_OF_STOCK");
+
+  const giftRef = available.docs[0].ref;
+  const exchangeRef = db.collection("exchanges").doc();
+
+  try {
+    await db.runTransaction(async (tx) => {
+      const [userSnap, giftSnap] = await Promise.all([
+        tx.get(userRef),
+        tx.get(giftRef),
+      ]);
+
+      if (!userSnap.exists) throw new HttpsError("not-found", "USER_NOT_FOUND");
+
+      const points = userSnap.data().points ?? 0;
+      if (points < amount) throw new HttpsError("failed-precondition", "INSUFFICIENT_POINTS");
+
+      // 트랜잭션 내 재확인 — 동시 요청으로 이미 발급됐을 경우 차단
+      if (giftSnap.data().isUsed) throw new HttpsError("unavailable", "OUT_OF_STOCK");
+
+      const code = giftSnap.data().code;
+      const now = FieldValue.serverTimestamp();
+
+      tx.update(userRef, { points: FieldValue.increment(-amount) });
+      tx.update(giftRef, { isUsed: true, assignedTo: uid, assignedAt: now });
+      tx.set(exchangeRef, {
+        uid,
+        amount,
+        code,
+        status: "done",
+        requestedAt: now,
+        completedAt: now,
+      });
+    });
+  } catch (e) {
+    if (e instanceof HttpsError) throw e;
+    throw new HttpsError("internal", "EXCHANGE_FAILED");
+  }
+
+  return { success: true };
+});
+
 // RTDB presence 삭제 시 activePlayers 감소
 exports.onPresenceDeleted = onValueDeleted(
   { ref: "presence/{quizId}/{uid}", instance: "qwiz-67f42-default-rtdb", region: "asia-southeast1" },
