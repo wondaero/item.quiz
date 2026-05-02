@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { doc, updateDoc } from 'firebase/firestore'
+import { getToken } from 'firebase/messaging'
+import { db, getMessagingInstance } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
 import { CURRENCY, calcLevel, LEVEL_THRESHOLDS } from '../constants'
 import PageLoading from '../components/PageLoading'
@@ -15,9 +18,13 @@ export default function MyPage() {
   const navigate = useNavigate()
   const loading = !userData
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [notifLoading, setNotifLoading] = useState(false)
 
   const today = new Date().toISOString().slice(0, 10)
   const hasFreeTicket = userData?.freeTicketLastUsed !== today
+
+  // 현재 알림 상태: fcmToken이 있으면 ON
+  const notifOn = !!userData?.fcmToken
 
   const handleLogout = () => {
     logout()
@@ -37,6 +44,37 @@ export default function MyPage() {
       text: `[Qwiz] 친구가 초대했어요!\n연상 퀴즈로 현상금에 도전해보세요 🎯\n가입하면 500 ${CURRENCY} 지급!`,
       link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
     })
+  }
+
+  const handleNotifToggle = async () => {
+    if (notifLoading) return
+    setNotifLoading(true)
+    try {
+      if (notifOn) {
+        // OFF: Firestore에서 토큰 제거
+        await updateDoc(doc(db, 'users', user.uid), { fcmToken: null })
+        localStorage.removeItem(`qwiz_fcm_${user.uid}`)
+      } else {
+        // ON: 권한 요청 + 토큰 저장
+        if (!import.meta.env.VITE_FIREBASE_VAPID_KEY) return
+        const permission = await Notification.requestPermission()
+        if (permission !== 'granted') {
+          alert('브라우저 설정에서 알림을 허용해주세요.')
+          return
+        }
+        const messaging = await getMessagingInstance()
+        if (!messaging) return
+        const token = await getToken(messaging, { vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY })
+        if (token) {
+          await updateDoc(doc(db, 'users', user.uid), { fcmToken: token })
+          localStorage.setItem(`qwiz_fcm_${user.uid}`, '1')
+        }
+      }
+    } catch (e) {
+      console.error('알림 설정 오류', e)
+    } finally {
+      setNotifLoading(false)
+    }
   }
 
   if (loading) return <PageLoading />
@@ -85,6 +123,17 @@ export default function MyPage() {
         </div>
         <button className="referral-share-btn" onClick={handleKakaoShare}>카카오로 친구 초대</button>
         <p className="referral-desc">친구가 가입하면 첫 정답 시 {CURRENCY} 보너스 · 이후 영구 수익 1% 쉐어</p>
+      </div>
+
+      <div className="notif-section">
+        <span className="notif-label">새 퀴즈 알림</span>
+        <button
+          className={`notif-toggle ${notifOn ? 'on' : 'off'}`}
+          onClick={handleNotifToggle}
+          disabled={notifLoading}
+        >
+          <span className="notif-thumb" />
+        </button>
       </div>
 
       <div className="my-actions">

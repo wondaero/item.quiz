@@ -209,6 +209,63 @@
   color: var(--text-sub);
 }
 
+.notif-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+.notif-label {
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.notif-toggle {
+  position: relative;
+  width: 48px;
+  height: 28px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.notif-toggle.on {
+  background: var(--primary);
+}
+
+.notif-toggle.off {
+  background: var(--border);
+}
+
+.notif-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.notif-thumb {
+  position: absolute;
+  top: 3px;
+  width: 22px;
+  height: 22px;
+  background: #fff;
+  border-radius: 50%;
+  transition: left 0.2s;
+}
+
+.notif-toggle.on .notif-thumb {
+  left: 23px;
+}
+
+.notif-toggle.off .notif-thumb {
+  left: 3px;
+}
+
 .confirm-overlay {
   position: fixed;
   inset: 0;
