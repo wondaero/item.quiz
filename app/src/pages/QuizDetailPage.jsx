@@ -45,6 +45,21 @@ export default function QuizDetailPage() {
   const [tipIndex, setTipIndex] = useState(0)
   const presenceRef = useRef(null)
 
+  const registerPresence = useCallback((quizId, uid) => {
+    if (!rtdb) return
+    const pRef = rtdbRef(rtdb, `presence/${quizId}/${uid}`)
+    presenceRef.current = pRef
+    set(pRef, true)
+    onDisconnect(pRef).remove()
+  }, [])
+
+  const removePresence = useCallback(() => {
+    if (presenceRef.current) {
+      remove(presenceRef.current)
+      presenceRef.current = null
+    }
+  }, [])
+
   useEffect(() => {
     if (!db) return
     const fetchData = async () => {
@@ -109,21 +124,6 @@ export default function QuizDetailPage() {
     })
     return () => unsub()
   }, [phase, id, user.uid, ticketType])
-
-  const registerPresence = useCallback((quizId, uid) => {
-    if (!rtdb) return
-    const pRef = rtdbRef(rtdb, `presence/${quizId}/${uid}`)
-    presenceRef.current = pRef
-    set(pRef, true)
-    onDisconnect(pRef).remove()
-  }, [])
-
-  const removePresence = useCallback(() => {
-    if (presenceRef.current) {
-      remove(presenceRef.current)
-      presenceRef.current = null
-    }
-  }, [])
 
   const handleAdWatched = useCallback(async () => {
     // TODO: 실제 AdMob 광고 시청 완료 후 호출
