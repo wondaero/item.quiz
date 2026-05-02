@@ -130,6 +130,15 @@
   - 플레이 진입 시 `presence/{quizId}/{uid}` 등록 + onDisconnect 설정
   - `onPresenceDeleted` CF (asia-southeast1) — presence 삭제 시 activePlayers 감소
   - `VITE_FIREBASE_DATABASE_URL` Vercel 환경변수 설정 완료
+- **성능 최적화 — Zustand 캐싱 + onSnapshot**:
+  - `useAuthStore`에 `userData`, `quizzes` 캐시 필드 추가
+  - `App.jsx` 중앙에서 `users/{uid}` onSnapshot 구독 → MyPage/ExchangePage 별도 fetch 제거
+  - `QuizListPage` onSnapshot 실시간 리스트 (getDocs 대체)
+  - `MyPage` 개별 Firestore fetch 완전 제거, 스토어에서만 읽음
+  - 두 번째 방문부터 캐시 즉시 표시 (로딩 없음)
+- **PageLoading 컴포넌트** (`src/components/PageLoading.jsx`):
+  - 랜덤 팁 문구 1개 표시 (10초마다 fade 전환)
+  - QuizListPage / QuizDetailPage / MyPage / ExchangePage 적용
 - **App.jsx 로딩 화면**: `authReady` 대기 중 스피너 + 랜덤 팁 문구 표시
 - **Firestore rules 강화**:
   - `quizzes` — admin create/update 전부 허용
@@ -266,8 +275,9 @@ firebase.json
 ## 남은 작업
 
 ### 급한 것 (다음 세션)
-- [ ] 테스트 이슈 정리 후 버그 픽스
-- [ ] 로딩 화면 — 느린 페이지 파악 후 적용
+- [ ] Vercel 엔드투엔드 테스트: 로그인 → 퀴즈 → 제출 → 포인트 확인
+- [ ] FCM 푸시 알림 테스트 (새 퀴즈 등록 시 유저 수신)
+- [ ] RTDB presence 동작 확인 (activePlayers 정확성)
 
 ### 나랑 같이 해야 할 것
 - [ ] 환전 신청 시 관리자 FCM 푸시 알림 (새 퀴즈는 완료, 환전은 미구현)

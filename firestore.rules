@@ -28,13 +28,21 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // 상품권
+    match /giftCards/{cardId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
     // 환전 신청
     match /exchanges/{exchangeId} {
       allow read: if true;
       allow create: if request.resource.data.keys().hasAll(['uid', 'amount', 'status', 'requestedAt'])
                     && request.resource.data.status == 'pending'
                     && request.resource.data.amount >= 20000;
-      allow update: if false; // 상태 변경은 콘솔에서 직접
+      allow update: if isAdmin();
       allow delete: if false;
     }
 

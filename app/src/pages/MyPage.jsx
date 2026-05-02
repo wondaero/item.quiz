@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { doc, getDoc } from 'firebase/firestore'
-import { db } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
 import { CURRENCY, calcLevel, LEVEL_THRESHOLDS } from '../constants'
+import PageLoading from '../components/PageLoading'
 import './MyPage.css'
 
 const initKakao = () => {
@@ -12,19 +11,9 @@ const initKakao = () => {
 
 export default function MyPage() {
   const { user, isAdmin, logout } = useAuthStore()
+  const userData = useAuthStore((s) => s.userData)
   const navigate = useNavigate()
-  const [userData, setUserData] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (!user || !db) return
-    const fetchUser = async () => {
-      const snap = await getDoc(doc(db, 'users', user.uid))
-      if (snap.exists()) setUserData(snap.data())
-      setLoading(false)
-    }
-    fetchUser()
-  }, [user])
+  const loading = !userData
 
   const today = new Date().toISOString().slice(0, 10)
   const hasFreeTicket = userData?.freeTicketLastUsed !== today
@@ -49,7 +38,7 @@ export default function MyPage() {
     })
   }
 
-  if (loading) return <div className="page-loading"><div className="spinner" /></div>
+  if (loading) return <PageLoading />
 
   const level = calcLevel(userData?.attempts ?? 0, userData?.solvedCount ?? 0)
   const nextThreshold = LEVEL_THRESHOLDS.find(t => t.level === level + 1)

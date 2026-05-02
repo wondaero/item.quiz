@@ -1,12 +1,13 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { collection, query, orderBy, getDocs, doc, getDoc } from 'firebase/firestore'
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
 import { HiHome, HiUser, HiTicket, HiShoppingBag } from 'react-icons/hi2'
 import { HiArrowUp, HiArrowDown } from 'react-icons/hi2'
 import './QuizListPage.css'
 import { CURRENCY } from '../constants'
+import PageLoading from '../components/PageLoading'
 
 const CHALLENGER_TIERS = [1000, 500, 300, 200, 100, 50]
 
@@ -23,39 +24,36 @@ function isNew(createdAt, challengers) {
 }
 
 export default function QuizListPage() {
-  const [quizzes, setQuizzes] = useState([])
-  const [loading, setLoading] = useState(true)
   const [sortAsc, setSortAsc] = useState(false)
-  const [filter, setFilter] = useState('active') // 'active' | 'solved' | 'all'
-  const [hasFreeTicket, setHasFreeTicket] = useState(false)
+  const [filter, setFilter] = useState('active')
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
+  const cachedQuizzes = useAuthStore((s) => s.quizzes)
+  const cachedUserData = useAuthStore((s) => s.userData)
+  const setQuizzesCache = useAuthStore((s) => s.setQuizzes)
 
-  useEffect(() => {
-    if (!db || !user) return
-    getDoc(doc(db, 'users', user.uid)).then((snap) => {
-      if (snap.exists()) {
-        const today = new Date().toISOString().slice(0, 10)
-        setHasFreeTicket(snap.data().freeTicketLastUsed !== today)
-      }
-    })
-  }, [user])
+  const [quizzes, setQuizzes] = useState(cachedQuizzes ?? [])
+  const [loading, setLoading] = useState(cachedQuizzes === null)
+
+  const today = new Date().toISOString().slice(0, 10)
+  const hasFreeTicket = (cachedUserData?.freeTicketLastUsed ?? null) !== today
 
   useEffect(() => {
     if (!db) return
-    const fetchQuizzes = async () => {
-      try {
-        const q = query(collection(db, 'quizzes'), orderBy('createdAt', 'desc'))
-        const snapshot = await getDocs(q)
-        setQuizzes(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })))
-      } catch (e) {
-        console.error(e)
-      } finally {
+    const unsub = onSnapshot(
+      query(collection(db, 'quizzes'), orderBy('createdAt', 'desc')),
+      (snapshot) => {
+        const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }))
+        setQuizzes(data)
+        setQuizzesCache(data)
         setLoading(false)
-      }
-    }
-    fetchQuizzes()
-  }, [])
+      },
+      (e) => { console.error(e); setLoading(false) }
+    )
+    return unsub
+  }, [setQuizzesCache])
+
+  if (loading) return <PageLoading />
 
   const sorted = useMemo(() => {
     const now = new Date()

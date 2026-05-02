@@ -75,10 +75,18 @@ body {
 
 .page-loading {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 24px;
   min-height: 100vh;
   background: var(--bg);
+}
+
+.page-loading-tip {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0;
 }
 
 .btn-primary:disabled {

@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { onAuthStateChanged } from 'firebase/auth'
 import { getToken } from 'firebase/messaging'
-import { doc, updateDoc } from 'firebase/firestore'
+import { doc, updateDoc, onSnapshot } from 'firebase/firestore'
 import { auth, db, getMessagingInstance } from './firebase/config'
 import useAuthStore from './store/useAuthStore'
 import { DEV_ACCESS } from './constants'
@@ -44,6 +44,7 @@ export default function App() {
   const [authReady, setAuthReady] = useState(false)
   const [tipIndex] = useState(() => Math.floor(Math.random() * AD_TIPS.length))
   const user = useAuthStore((s) => s.user)
+  const setUserDataCache = useAuthStore((s) => s.setUserData)
 
   useEffect(() => {
     const ref = new URLSearchParams(window.location.search).get('ref')
@@ -60,6 +61,14 @@ export default function App() {
     if (user?.uid) registerFcmToken(user.uid)
   }, [user?.uid])
 
+  useEffect(() => {
+    if (!user?.uid || !db) return
+    const unsub = onSnapshot(doc(db, 'users', user.uid), (snap) => {
+      if (snap.exists()) setUserDataCache(snap.data())
+    })
+    return unsub
+  }, [user?.uid, setUserDataCache])
+
   if (!authReady) return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24 }}>
       <div className="spinner" />
@@ -69,7 +78,12 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Suspense fallback={null}>
+      <Suspense fallback={
+        <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24 }}>
+          <div className="spinner" />
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{AD_TIPS[tipIndex]}</p>
+        </div>
+      }>
         <Routes>
           <Route path="/" element={<IntroPage />} />
           <Route path="/login" element={<LoginPage />} />

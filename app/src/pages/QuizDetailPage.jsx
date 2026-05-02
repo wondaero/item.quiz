@@ -7,6 +7,7 @@ import { db, functions, rtdb } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
 import './QuizDetailPage.css'
 import { CURRENCY, DEV_ACCESS } from '../constants'
+import PageLoading from '../components/PageLoading'
 
 const getTodayString = () => new Date().toISOString().slice(0, 10)
 
@@ -170,7 +171,7 @@ export default function QuizDetailPage() {
     }
   }
 
-  if (phase === 'loading-data') return <div className="page-loading"><div className="spinner" /></div>
+  if (phase === 'loading-data') return <PageLoading />
   if (!quiz) return null
 
   return (
@@ -239,13 +240,13 @@ export default function QuizDetailPage() {
           {result === 'correct' ? (
             <>
               <div className="result-icon">🎉</div>
-              <h2>정답!</h2>
+              <h2 className="result-txt">정답입니다!</h2>
               <p className="result-points">+{lockedBounty.toLocaleString()} {CURRENCY} 획득</p>
             </>
           ) : (
             <>
               <div className="result-icon">❌</div>
-              <h2>오답</h2>
+              <h2 className="result-txt">오답입니다...</h2>
               {ticketType === 'paid'
                 ? <p className="result-sub">현상금이 1 {CURRENCY} 올랐어요 · 1 {CURRENCY} 환불</p>
                 : <p className="result-sub">현상금 변동 없음</p>
@@ -274,7 +275,7 @@ export default function QuizDetailPage() {
       {phase === 'kicked' && (
         <div className="result-phase">
           <div className="result-icon">🚨</div>
-          <h2>다른 사람이 먼저 맞췄어요</h2>
+          <h2 className="result-txt">다른 유저가 먼저 맞췄어요...</h2>
           <p className="result-sub">{ticketType === 'free' ? '무료 참가권이 복구되었습니다' : '참가권은 유지됩니다'}</p>
           <button className="btn-primary" onClick={() => navigate('/quiz')}>목록으로</button>
         </div>

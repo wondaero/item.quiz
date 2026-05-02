@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { doc, getDoc, addDoc, getDocs, collection, query, where, Timestamp, increment, runTransaction } from 'firebase/firestore'
+import { doc, addDoc, getDocs, collection, query, where, Timestamp, increment, runTransaction } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
 import { CURRENCY } from '../constants'
+import PageLoading from '../components/PageLoading'
 import './ExchangePage.css'
 
 const AMOUNT_OPTIONS = [3000, 5000, 10000, 20000]
@@ -11,22 +12,18 @@ const AMOUNT_OPTIONS = [3000, 5000, 10000, 20000]
 export default function ExchangePage() {
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
-  const [userData, setUserData] = useState(null)
+  const userData = useAuthStore((s) => s.userData)
   const [stock, setStock] = useState({})
   const [amount, setAmount] = useState(null)
   const [submitted, setSubmitted] = useState(false)
-  const [submittedType, setSubmittedType] = useState(null) // 'exchange' | 'request'
+  const [submittedType, setSubmittedType] = useState(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (!user || !db) return
     const fetch = async () => {
-      const [userSnap, giftSnap] = await Promise.all([
-        getDoc(doc(db, 'users', user.uid)),
-        getDocs(query(collection(db, 'giftCards'), where('isUsed', '==', false))),
-      ])
-      if (userSnap.exists()) setUserData(userSnap.data())
+      const giftSnap = await getDocs(query(collection(db, 'giftCards'), where('isUsed', '==', false)))
       const counts = {}
       giftSnap.docs.forEach((d) => {
         const amt = d.data().amount
@@ -89,7 +86,7 @@ export default function ExchangePage() {
     }
   }
 
-  if (loading) return <div className="page-loading"><div className="spinner" /></div>
+  if (loading) return <PageLoading />
 
   return (
     <div className="exchange-page">

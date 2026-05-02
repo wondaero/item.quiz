@@ -192,6 +192,12 @@
 
 .result-icon {
   font-size: 4rem;
+  margin-bottom: 2rem;
+}
+.result-txt{
+  color: #fff;
+  font-weight: 700;
+  margin-bottom: 0;
 }
 
 .result-points {

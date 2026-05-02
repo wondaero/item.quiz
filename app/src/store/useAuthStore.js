@@ -12,13 +12,17 @@ const calcIsAdmin = (user) =>
 const useAuthStore = create((set) => ({
   user: savedUser,
   isAdmin: calcIsAdmin(savedUser),
+  userData: null,       // Firestore users 문서 캐시
+  quizzes: null,        // Firestore quizzes 캐시 (null = 미로드)
   setUser: (user) => {
     localStorage.setItem('qwiz_user', JSON.stringify(user))
     set({ user, isAdmin: calcIsAdmin(user) })
   },
+  setUserData: (userData) => set({ userData }),
+  setQuizzes: (quizzes) => set({ quizzes }),
   logout: () => {
     localStorage.removeItem('qwiz_user')
-    set({ user: null, isAdmin: DEV_ACCESS.전체접근 || DEV_ACCESS.admin })
+    set({ user: null, isAdmin: DEV_ACCESS.전체접근 || DEV_ACCESS.admin, userData: null, quizzes: null })
   },
 }))
 
