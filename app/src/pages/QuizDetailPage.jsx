@@ -84,7 +84,6 @@ export default function QuizDetailPage() {
 
       if (DEV_ACCESS.전체접근 || DEV_ACCESS.광고 || hasFree) {
         if (hasFree) {
-          await updateDoc(doc(db, 'users', user.uid), { freeTicketLastUsed: getTodayString() })
           await updateDoc(doc(db, 'quizzes', id), { activePlayers: increment(1) })
           setLockedBounty(quizData.bounty)
           setTicketType('free')

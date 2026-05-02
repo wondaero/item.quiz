@@ -31,11 +31,16 @@ function PrivateRoute({ children }) {
 
 const registerFcmToken = async (uid) => {
   if (!import.meta.env.VITE_FIREBASE_VAPID_KEY) return
+  const flagKey = `qwiz_fcm_${uid}`
+  if (localStorage.getItem(flagKey)) return  // 이미 등록됨
   try {
     const messaging = await getMessagingInstance()
     if (!messaging) return
     const token = await getToken(messaging, { vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY })
-    if (token) await updateDoc(doc(db, 'users', uid), { fcmToken: token })
+    if (token) {
+      await updateDoc(doc(db, 'users', uid), { fcmToken: token })
+      localStorage.setItem(flagKey, '1')
+    }
   } catch {
     // 알림 권한 거부 시 무시
   }

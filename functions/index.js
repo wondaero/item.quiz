@@ -88,6 +88,9 @@ exports.submitAnswer = onCall({ enforceAppCheck: false, invoker: "public" }, asy
   const { quizId, answer } = request.data;
   if (!quizId || !answer) throw new HttpsError("invalid-argument", "quizId, answer 필요");
 
+  // ticketType은 'free' | 'paid' 만 허용
+  const ticketType = request.data.ticketType === "paid" ? "paid" : "free";
+
   const quizRef = db.collection("quizzes").doc(quizId);
   const userRef = db.collection("users").doc(uid);
 
@@ -98,11 +101,17 @@ exports.submitAnswer = onCall({ enforceAppCheck: false, invoker: "public" }, asy
 
   if (quizSnap.data().solvedBy) return { result: "already_solved" };
 
+  // free 티켓 서버 검증
+  if (ticketType === "free") {
+    const today = getKstDate();
+    const lastUsed = userSnap.data().freeTicketLastUsed ?? null;
+    if (lastUsed === today) throw new HttpsError("failed-precondition", "FREE_TICKET_USED");
+  }
+
   const acceptedAnswers = quizSnap.data().answers ?? [];
   const isCorrect = acceptedAnswers.some((a) => normalize(a) === normalize(answer));
 
   if (!isCorrect) {
-    const ticketType = request.data.ticketType ?? "free";
     const today = getKstDate();
     const statsRef = db.collection("dailyStats").doc(today);
     if (ticketType === "paid") {
@@ -125,7 +134,7 @@ exports.submitAnswer = onCall({ enforceAppCheck: false, invoker: "public" }, asy
           challengers: FieldValue.increment(1),
           activePlayers: FieldValue.increment(-1),
         }),
-        userRef.update({ attempts: FieldValue.increment(1) }),
+        userRef.update({ attempts: FieldValue.increment(1), freeTicketLastUsed: today }),
         statsRef.set({ wrongFree: FieldValue.increment(1) }, { merge: true }),
       ]);
     }
@@ -177,6 +186,7 @@ exports.submitAnswer = onCall({ enforceAppCheck: false, invoker: "public" }, asy
         points: FieldValue.increment(totalGain),
         solvedCount: FieldValue.increment(1),
         ...(claimNewbie && { newbieBonusClaimed: true }),
+        ...(ticketType === "free" && { freeTicketLastUsed: today }),
       });
 
       if (u.referredBy) {

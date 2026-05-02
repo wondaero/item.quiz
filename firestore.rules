@@ -17,7 +17,7 @@ service cloud.firestore {
 
     // 유저 문서
     match /users/{userId} {
-      allow read: if true;
+      allow read: if request.auth != null;
       allow create: if validUserCreate();
       allow update: if validUserUpdate();
       allow delete: if false;
@@ -80,8 +80,11 @@ service cloud.firestore {
 
     function validUserUpdate() {
       let d = request.resource.data;
-      return (!('points' in d) || d.points is int)
-        && (!('attempts' in d) || d.attempts is int);
+      let allowed = ['points', 'attempts', 'freeTicketLastUsed', 'fcmToken',
+                     'solvedCount', 'newbieBonusClaimed', 'referredBy', 'nickname', 'profileImage'];
+      return d.diff(resource.data).affectedKeys().hasOnly(allowed)
+        && (!('points' in d) || (d.points is int && d.points >= 0))
+        && (!('attempts' in d) || (d.attempts is int && d.attempts >= 0));
     }
   }
 }
