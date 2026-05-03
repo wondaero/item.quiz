@@ -162,3 +162,21 @@
   color: var(--text-sub);
   margin: 0;
 }
+
+.btn-request {
+  width: 100%;
+  padding: 16px;
+  background: transparent;
+  border: 2px solid var(--primary);
+  border-radius: 12px;
+  color: var(--primary);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 16px;
+}
+
+.btn-request:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

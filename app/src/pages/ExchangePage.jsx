@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { httpsCallable } from 'firebase/functions'
-import { functions } from '../firebase/config'
+import { addDoc, collection, Timestamp } from 'firebase/firestore'
+import { functions, db } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
 import { CURRENCY } from '../constants'
 import PageLoading from '../components/PageLoading'
@@ -11,10 +12,12 @@ const AMOUNT_OPTIONS = [5000, 10000, 50000, 100000]
 
 export default function ExchangePage() {
   const navigate = useNavigate()
+  const user = useAuthStore((s) => s.user)
   const userData = useAuthStore((s) => s.userData)
   const [stock, setStock] = useState({})
   const [amount, setAmount] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [requesting, setRequesting] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -55,7 +58,30 @@ export default function ExchangePage() {
     }
   }
 
+  const handleStockRequest = async () => {
+    if (!amount || requesting) return
+    setRequesting(true)
+    try {
+      await addDoc(collection(db, 'adminAlerts'), {
+        type: 'stock_request',
+        amount,
+        uid: user.uid,
+        createdAt: Timestamp.now(),
+      })
+      alert(`${amount.toLocaleString()}원 상품권 재고 신청이 완료되었습니다.\n재고 보충 후 알려드릴게요!`)
+      setAmount(null)
+    } catch {
+      alert('오류가 발생했습니다.')
+    } finally {
+      setRequesting(false)
+    }
+  }
+
   if (loading) return <PageLoading />
+
+  const points = userData?.points ?? 0
+  const isAffordable = amount && amount <= points
+  const hasStock = amount && (stock[amount] ?? 0) > 0
 
   return (
     <div className="exchange-page">
@@ -71,7 +97,7 @@ export default function ExchangePage() {
       <div className="exchange-form">
         <div className="points-display">
           <span className="points-label">보유 {CURRENCY}</span>
-          <span className="points-value">{(userData?.points ?? 0).toLocaleString()} {CURRENCY}</span>
+          <span className="points-value">{points.toLocaleString()} {CURRENCY}</span>
         </div>
 
         <div className="exchange-notice">
@@ -81,8 +107,8 @@ export default function ExchangePage() {
 
         <div className="amount-options">
           {AMOUNT_OPTIONS.map((opt) => {
-            const affordable = opt <= (userData?.points ?? 0)
-            const hasStock = (stock[opt] ?? 0) > 0
+            const affordable = opt <= points
+            const inStock = (stock[opt] ?? 0) > 0
             return (
               <button
                 key={opt}
@@ -90,28 +116,37 @@ export default function ExchangePage() {
                 onClick={() => affordable && setAmount(opt)}
               >
                 <span>{opt.toLocaleString()}원</span>
-                <span className={`stock-badge ${!hasStock ? 'out' : ''}`}>
-                  {hasStock ? `${stock[opt]}장` : '품절'}
+                <span className={`stock-badge ${!inStock ? 'out' : ''}`}>
+                  {inStock ? `${stock[opt]}장` : '품절'}
                 </span>
               </button>
             )
           })}
         </div>
 
-        {amount && (
-          <p className="exchange-preview">
-            {amount.toLocaleString()} {CURRENCY} → {amount.toLocaleString()}원 상품권
-            {!(stock[amount] > 0) && ' · 현재 품절'}
-          </p>
+        {amount && isAffordable && !hasStock && (
+          <button
+            className="btn-request"
+            onClick={handleStockRequest}
+            disabled={requesting}
+          >
+            {requesting ? '신청 중...' : `${amount.toLocaleString()}원 재고 신청하기`}
+          </button>
         )}
 
-        <button
-          className="btn-primary"
-          onClick={handleExchange}
-          disabled={submitting || !amount || !(stock[amount] > 0)}
-        >
-          {submitting ? '처리 중...' : '교환하기'}
-        </button>
+        {amount && isAffordable && hasStock && (
+          <button
+            className="btn-primary"
+            onClick={handleExchange}
+            disabled={submitting}
+          >
+            {submitting ? '처리 중...' : '교환하기'}
+          </button>
+        )}
+
+        {amount && !isAffordable && (
+          <button className="btn-primary" disabled>포인트 부족</button>
+        )}
       </div>
     </div>
   )
