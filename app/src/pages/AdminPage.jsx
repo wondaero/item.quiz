@@ -18,7 +18,7 @@ function fmtNum(n) {
 
 const BOUNTY_OPTIONS = [500, 1000, 2000, 3000, 5000]
 const POINT_TIERS = [2500, 5000, 10000, 20000]
-const GIFT_TIERS = [5000, 10000, 20000]
+const GIFT_TIERS = [5000, 10000, 50000, 100000]
 
 function toDatetimeLocal(ts) {
   if (!ts) return ''
