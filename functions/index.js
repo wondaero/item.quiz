@@ -255,7 +255,7 @@ exports.onQuizCreated = onDocumentCreated(
   }
 );
 
-const VALID_AMOUNTS = [3000, 5000, 10000, 20000];
+const VALID_AMOUNTS = [5000, 10000, 20000];
 
 // 상품권 재고 조회 (코드 미포함, 공개용)
 exports.getGiftStock = onCall({ enforceAppCheck: false, invoker: "public" }, async () => {

@@ -7,7 +7,7 @@ import { CURRENCY } from '../constants'
 import PageLoading from '../components/PageLoading'
 import './ExchangePage.css'
 
-const AMOUNT_OPTIONS = [3000, 5000, 10000, 20000]
+const AMOUNT_OPTIONS = [5000, 10000, 20000]
 
 export default function ExchangePage() {
   const navigate = useNavigate()

@@ -18,7 +18,7 @@ function fmtNum(n) {
 
 const BOUNTY_OPTIONS = [500, 1000, 2000, 3000, 5000]
 const POINT_TIERS = [2500, 5000, 10000, 20000]
-const GIFT_TIERS = [3000, 5000, 10000]
+const GIFT_TIERS = [5000, 10000, 20000]
 
 function toDatetimeLocal(ts) {
   if (!ts) return ''
@@ -81,7 +81,7 @@ export default function AdminPage() {
   const [submitting, setSubmitting] = useState(false)
 
   const [giftCode, setGiftCode] = useState('')
-  const [giftAmount, setGiftAmount] = useState('3000')
+  const [giftAmount, setGiftAmount] = useState('5000')
   const [giftCards, setGiftCards] = useState([])
   const [exchangeRequests, setExchangeRequests] = useState([])
   const [giftLoading, setGiftLoading] = useState(false)
@@ -254,7 +254,7 @@ export default function AdminPage() {
       createdAt: Timestamp.now(),
     })
     setGiftCode('')
-    setGiftAmount('3000')
+    setGiftAmount('5000')
     setShowForm(false)
   }
 
