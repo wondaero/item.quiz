@@ -97,7 +97,6 @@ export default function QuizListPage() {
             <button className={`filter-btn ${filter === 'solved' ? 'active' : ''}`} onClick={() => setFilter('solved')}>종료</button>
             <button className={`filter-btn ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>전체</button>
           </div>
-          </div>
         </div>
       </header>
 
