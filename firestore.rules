@@ -23,15 +23,15 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // 상품권 — 클라이언트 완전 차단 (CF Admin SDK만 접근)
+    // 상품권 — admin만 읽기, 클라이언트 쓰기 차단 (CF Admin SDK만 쓰기)
     match /giftCards/{cardId} {
-      allow read: if false;
+      allow read: if isAdmin();
       allow write: if false;
     }
 
-    // 환전 내역 — 본인 것만 읽기, 쓰기는 CF에서만
+    // 환전 내역 — 본인 것만 읽기 or admin 전체 읽기, 쓰기는 CF에서만
     match /exchanges/{exchangeId} {
-      allow read: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow read: if request.auth != null && (request.auth.uid == resource.data.uid || isAdmin());
       allow write: if false;
     }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, Timestamp, orderBy, query, where, getCountFromServer, onSnapshot, limit, startAfter } from 'firebase/firestore'
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, Timestamp, orderBy, query, where, onSnapshot, limit, startAfter } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
 import './AdminPage.css'
@@ -134,14 +134,12 @@ export default function AdminPage() {
     if (!db) return
     setDashLoading(true)
     try {
-      const [usersSnap, pendingSnap, quizzesSnap] = await Promise.all([
+      const [usersSnap, quizzesSnap] = await Promise.all([
         getDocs(query(collection(db, 'users'), where('points', '>=', Math.min(...GIFT_TIERS)))),
-        getCountFromServer(query(collection(db, 'exchanges'), where('status', '==', 'pending'))),
         getDocs(collection(db, 'quizzes')),
       ])
       setDashData({
         userPoints: usersSnap.docs.map((d) => d.data().points),
-        pendingCount: pendingSnap.data().count,
         quizzes: quizzesSnap.docs.map((d) => ({ id: d.id, ...d.data() })),
       })
     } finally {
@@ -725,14 +723,6 @@ export default function AdminPage() {
                   )
                 })()}
 
-                {dashData.pendingCount > 0 && (
-                  <section>
-                    <div className="dash-pending warning">
-                      <span className="dash-count">{dashData.pendingCount}건</span>
-                      <span className="dash-label">환전 신청 처리 대기 중</span>
-                    </div>
-                  </section>
-                )}
               </>
             )
           })() : (
