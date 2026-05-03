@@ -94,17 +94,17 @@ export default function QuizListPage() {
         </div>
         <div className="header-controls">
           <div className="filter-btns">
-            <button className={`filter-btn ${sortBy === 'bounty' ? 'active' : ''}`} onClick={() => { if (sortBy === 'bounty') setSortAsc(v => !v); else { setSortBy('bounty'); setSortAsc(false) } }}>
-              현상금순 {sortBy === 'bounty' && (sortAsc ? <HiArrowUp /> : <HiArrowDown />)}
-            </button>
-            <button className={`filter-btn ${sortBy === 'players' ? 'active' : ''}`} onClick={() => { if (sortBy === 'players') setSortAsc(v => !v); else { setSortBy('players'); setSortAsc(false) } }}>
-              참여자순 {sortBy === 'players' && (sortAsc ? <HiArrowUp /> : <HiArrowDown />)}
-            </button>
-          </div>
-          <div className="filter-btns">
             <button className={`filter-btn ${filter === 'active' ? 'active' : ''}`} onClick={() => setFilter('active')}>진행중</button>
             <button className={`filter-btn ${filter === 'solved' ? 'active' : ''}`} onClick={() => setFilter('solved')}>종료</button>
             <button className={`filter-btn ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>전체</button>
+          </div>
+          <div className="filter-btns">
+            <button className={`filter-btn ${sortBy === 'bounty' ? 'active' : ''}`} onClick={() => { if (sortBy === 'bounty') setSortAsc(v => !v); else { setSortBy('bounty'); setSortAsc(false) } }}>
+              현상금 {sortBy === 'bounty' && (sortAsc ? <HiArrowUp /> : <HiArrowDown />)}
+            </button>
+            <button className={`filter-btn ${sortBy === 'players' ? 'active' : ''}`} onClick={() => { if (sortBy === 'players') setSortAsc(v => !v); else { setSortBy('players'); setSortAsc(false) } }}>
+              참여자 {sortBy === 'players' && (sortAsc ? <HiArrowUp /> : <HiArrowDown />)}
+            </button>
           </div>
         </div>
       </header>
