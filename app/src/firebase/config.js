@@ -4,6 +4,7 @@ import { getAuth } from 'firebase/auth'
 import { getFunctions } from 'firebase/functions'
 import { getDatabase } from 'firebase/database'
 import { getMessaging, isSupported } from 'firebase/messaging'
+import { getStorage } from 'firebase/storage'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -21,3 +22,4 @@ export const auth = getAuth(app)
 export const functions = getFunctions(app, 'asia-northeast3')
 export const rtdb = import.meta.env.VITE_FIREBASE_DATABASE_URL ? getDatabase(app) : null
 export const getMessagingInstance = () => isSupported().then((ok) => ok ? getMessaging(app) : null)
+export const storage = getStorage(app)

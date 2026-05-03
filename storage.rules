@@ -1,0 +1,11 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // 퀴즈 이미지 — admin만 업로드, 누구나 읽기
+    match /quizImages/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == '4833965068';
+    }
+  }
+}

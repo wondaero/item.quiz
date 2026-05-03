@@ -356,3 +356,24 @@
   padding: 4px 12px;
   border-radius: 20px;
 }
+
+.hints-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.hint-images {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hint-image {
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #fff;
+}

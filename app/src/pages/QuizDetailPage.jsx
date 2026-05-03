@@ -17,14 +17,25 @@ const AD_TIPS = [
   '친구 초대하고 또 벌고',
 ]
 
-function HintsDisplay({ hints, isHtml }) {
+function HintsDisplay({ hints, isHtml, hintImages }) {
   return (
-    <p className="hints">
-      {isHtml
-        ? <span dangerouslySetInnerHTML={{ __html: hints.join('<br/>') }} />
-        : hints.join('\n')
-      }
-    </p>
+    <div className="hints-wrap">
+      {hintImages?.length > 0 && (
+        <div className="hint-images">
+          {hintImages.map((url, i) => (
+            <img key={i} src={url} alt={`힌트 ${i + 1}`} className="hint-image" />
+          ))}
+        </div>
+      )}
+      {hints?.length > 0 && (
+        <p className="hints">
+          {isHtml
+            ? <span dangerouslySetInnerHTML={{ __html: hints.join('<br/>') }} />
+            : hints.join('\n')
+          }
+        </p>
+      )}
+    </div>
   )
 }
 
@@ -201,7 +212,7 @@ export default function QuizDetailPage() {
             </div>
           </div>
           <div className="play-phase">
-            <HintsDisplay hints={quiz.hints} isHtml={quiz.isHtml} />
+            <HintsDisplay hints={quiz.hints} isHtml={quiz.isHtml} hintImages={quiz.hintImages} />
             {showQuitConfirm ? (
               <div className="quit-confirm">
                 <p>정말 포기할까요?</p>
@@ -262,7 +273,7 @@ export default function QuizDetailPage() {
       {phase === 'archive' && (
         <div className="play-phase">
           <div className="archive-badge">종료된 문제</div>
-          <HintsDisplay hints={quiz.hints} isHtml={quiz.isHtml} />
+          <HintsDisplay hints={quiz.hints} isHtml={quiz.isHtml} hintImages={quiz.hintImages} />
           <div className="archive-answer">
             <span className="archive-answer-label">정답</span>
             <span className="archive-answer-value">{(quiz.answers ?? [quiz.answer]).join(' / ')}</span>

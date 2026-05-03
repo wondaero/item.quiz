@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, Timestamp, orderBy, query, where, onSnapshot, limit, startAfter } from 'firebase/firestore'
-import { db } from '../firebase/config'
+import { db, storage } from '../firebase/config'
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
+import { compressImage } from '../utils/compressImage'
 import useAuthStore from '../store/useAuthStore'
 import './AdminPage.css'
 import { CURRENCY } from '../constants'
@@ -66,6 +68,8 @@ export default function AdminPage() {
 
   const [isHtml, setIsHtml] = useState(false)
   const [hintsText, setHintsText] = useState('')
+  const [hintImages, setHintImages] = useState([]) // [{ previewUrl, uploadedUrl }]
+  const [imageUploading, setImageUploading] = useState(false)
   const [showHtmlPreview, setShowHtmlPreview] = useState(false)
   const [showQuizPreview, setShowQuizPreview] = useState(false)
   const [answers, setAnswers] = useState([''])
@@ -205,6 +209,7 @@ export default function AdminPage() {
   const resetForm = () => {
     setIsHtml(false)
     setHintsText('')
+    setHintImages([])
     setAnswers([''])
     setPreviewHint('')
     setAdminNote('')
@@ -221,6 +226,7 @@ export default function AdminPage() {
     setEditingQuiz(q)
     setIsHtml(q.isHtml ?? false)
     setHintsText((q.hints ?? []).join('\n'))
+    setHintImages((q.hintImages ?? []).map((url) => ({ previewUrl: url, uploadedUrl: url })))
     setAnswers(q.answers ?? (q.answer ? [q.answer] : ['']))
     setPreviewHint(q.previewHint ?? extractPreviewHint(q.hints ?? [], q.isHtml ?? false))
     setAdminNote(q.adminNote ?? '')
@@ -238,6 +244,42 @@ export default function AdminPage() {
   const addAnswer = () => setAnswers((prev) => [...prev, ''])
   const removeAnswer = (i) => setAnswers((prev) => prev.filter((_, idx) => idx !== i))
   const updateAnswer = (i, val) => setAnswers((prev) => prev.map((a, idx) => idx === i ? val : a))
+
+  const handleImageAdd = async (e) => {
+    const files = Array.from(e.target.files)
+    if (!files.length) return
+    if (hintImages.length + files.length > 5) { alert('이미지는 최대 5장'); return }
+    setImageUploading(true)
+    try {
+      const newImages = await Promise.all(files.map(async (file) => {
+        const compressed = await compressImage(file)
+        const previewUrl = URL.createObjectURL(compressed)
+        const storageRef = ref(storage, `quizImages/${Date.now()}_${compressed.name}`)
+        await uploadBytes(storageRef, compressed)
+        const uploadedUrl = await getDownloadURL(storageRef)
+        return { previewUrl, uploadedUrl }
+      }))
+      setHintImages((prev) => [...prev, ...newImages])
+    } catch (e) {
+      console.error('이미지 업로드 오류', e)
+      alert('이미지 업로드에 실패했습니다.')
+    } finally {
+      setImageUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  const handleImageRemove = async (idx) => {
+    const img = hintImages[idx]
+    try {
+      if (img.uploadedUrl) {
+        const storageRef = ref(storage, img.uploadedUrl)
+        await deleteObject(storageRef).catch(() => {})
+      }
+    } finally {
+      setHintImages((prev) => prev.filter((_, i) => i !== idx))
+    }
+  }
 
   const handleDeleteQuiz = async (e, quiz) => {
     e.stopPropagation()
@@ -280,10 +322,12 @@ export default function AdminPage() {
 
     setSubmitting(true)
     try {
+      const imageUrls = hintImages.map((img) => img.uploadedUrl).filter(Boolean)
       if (editingQuiz) {
         if (db) await updateDoc(doc(db, 'quizzes', editingQuiz.id), {
           hints: validHints,
           isHtml,
+          hintImages: imageUrls,
           answers: validAnswers,
           previewHint: previewHint.trim() || null,
           adminNote: adminNote.trim() || null,
@@ -291,7 +335,7 @@ export default function AdminPage() {
           publishAt: publishTimestamp,
         })
         setQuizzes((prev) => prev.map((q) => q.id === editingQuiz.id
-          ? { ...q, hints: validHints, isHtml, answers: validAnswers, previewHint: previewHint.trim() || null, adminNote: adminNote.trim() || null, bounty: finalBounty, publishAt: publishTimestamp }
+          ? { ...q, hints: validHints, isHtml, hintImages: imageUrls, answers: validAnswers, previewHint: previewHint.trim() || null, adminNote: adminNote.trim() || null, bounty: finalBounty, publishAt: publishTimestamp }
           : q
         ))
         alert('수정되었습니다')
@@ -299,6 +343,7 @@ export default function AdminPage() {
         if (db) await addDoc(collection(db, 'quizzes'), {
           hints: validHints,
           isHtml,
+          hintImages: imageUrls,
           answers: validAnswers,
           previewHint: previewHint.trim() || null,
           adminNote: adminNote.trim() || null,
@@ -377,6 +422,36 @@ export default function AdminPage() {
                   placeholder={isHtml ? '<b>고라니</b>\n<span style="color:red">모음</span>\n비' : '고라니\n모음\n비'}
                   rows={6}
                 />
+              )}
+            </section>
+
+            {/* 이미지 힌트 */}
+            <section>
+              <div className="label-row">
+                <label>이미지 힌트 ({hintImages.length}/5)</label>
+                {hintImages.length < 5 && (
+                  <label className="preview-btn image-upload-btn">
+                    {imageUploading ? '업로드 중...' : '+ 추가'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      style={{ display: 'none' }}
+                      onChange={handleImageAdd}
+                      disabled={imageUploading}
+                    />
+                  </label>
+                )}
+              </div>
+              {hintImages.length > 0 && (
+                <div className="hint-images-preview">
+                  {hintImages.map((img, i) => (
+                    <div key={i} className="hint-image-wrap">
+                      <img src={img.previewUrl} alt={`힌트 이미지 ${i + 1}`} className="hint-image-thumb" />
+                      <button className="hint-image-remove" onClick={() => handleImageRemove(i)}>×</button>
+                    </div>
+                  ))}
+                </div>
               )}
             </section>
 
