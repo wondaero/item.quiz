@@ -86,7 +86,9 @@ export default function QuizListPage() {
   return (
     <div className="quiz-list-page">
       <header className="quiz-list-header">
-        <h2>Qwiz</h2>
+        <div className="quiz-list-header-top">
+          <h2>Qwiz</h2>
+        </div>
         <div className="header-controls">
           <div className="filter-btns">
             <button className={`filter-btn ${sortBy === 'bounty' ? 'active' : ''}`} onClick={() => setSortBy('bounty')}>현상금순</button>
