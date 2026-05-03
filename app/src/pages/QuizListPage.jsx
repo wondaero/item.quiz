@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { collection, query, orderBy, getDocs, limit, startAfter } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
-import { HiHome, HiUser, HiTicket, HiShoppingBag } from 'react-icons/hi2'
+import { HiHome, HiUser, HiTicket, HiShoppingBag, HiArrowUp, HiArrowDown } from 'react-icons/hi2'
 import './QuizListPage.css'
 import { CURRENCY } from '../constants'
 import PageLoading from '../components/PageLoading'
@@ -25,6 +25,7 @@ function isNew(createdAt, challengers) {
 
 export default function QuizListPage() {
   const [sortBy, setSortBy] = useState('bounty') // 'bounty' | 'players'
+  const [sortAsc, setSortAsc] = useState(false)
   const [filter, setFilter] = useState('active')
   const navigate = useNavigate()
   const cachedUserData = useAuthStore((s) => s.userData)
@@ -75,11 +76,13 @@ export default function QuizListPage() {
         if (filter === 'solved') return !!q.solvedBy
         return true
       })
-      .sort((a, b) => sortBy === 'players'
-        ? (b.activePlayers ?? 0) - (a.activePlayers ?? 0)
-        : b.bounty - a.bounty
-      )
-  }, [quizzes, sortBy, filter])
+      .sort((a, b) => {
+        const field = sortBy === 'players' ? 'activePlayers' : 'bounty'
+        const va = a[field] ?? 0
+        const vb = b[field] ?? 0
+        return sortAsc ? va - vb : vb - va
+      })
+  }, [quizzes, sortBy, sortAsc, filter])
 
   if (loading) return <PageLoading />
 
@@ -91,8 +94,12 @@ export default function QuizListPage() {
         </div>
         <div className="header-controls">
           <div className="filter-btns">
-            <button className={`filter-btn ${sortBy === 'bounty' ? 'active' : ''}`} onClick={() => setSortBy('bounty')}>현상금순</button>
-            <button className={`filter-btn ${sortBy === 'players' ? 'active' : ''}`} onClick={() => setSortBy('players')}>참여자순</button>
+            <button className={`filter-btn ${sortBy === 'bounty' ? 'active' : ''}`} onClick={() => { if (sortBy === 'bounty') setSortAsc(v => !v); else { setSortBy('bounty'); setSortAsc(false) } }}>
+              현상금순 {sortBy === 'bounty' && (sortAsc ? <HiArrowUp /> : <HiArrowDown />)}
+            </button>
+            <button className={`filter-btn ${sortBy === 'players' ? 'active' : ''}`} onClick={() => { if (sortBy === 'players') setSortAsc(v => !v); else { setSortBy('players'); setSortAsc(false) } }}>
+              참여자순 {sortBy === 'players' && (sortAsc ? <HiArrowUp /> : <HiArrowDown />)}
+            </button>
           </div>
           <div className="filter-btns">
             <button className={`filter-btn ${filter === 'active' ? 'active' : ''}`} onClick={() => setFilter('active')}>진행중</button>
