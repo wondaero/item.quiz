@@ -124,8 +124,8 @@ export default function AdminPage() {
       (snap) => setExchangeRequests(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     )
     const unsubAlerts = onSnapshot(
-      query(collection(db, 'adminAlerts'), where('type', '==', 'stock_request'), orderBy('createdAt', 'desc')),
-      (snap) => setStockRequests(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+      query(collection(db, 'adminAlerts'), orderBy('createdAt', 'desc')),
+      (snap) => setStockRequests(snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((d) => d.type === 'stock_request'))
     )
     return () => { unsubGift(); unsubExchange(); unsubAlerts() }
   }, [])
