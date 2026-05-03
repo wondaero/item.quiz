@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, Timestamp, orderBy, query, where, getCountFromServer, onSnapshot } from 'firebase/firestore'
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, Timestamp, orderBy, query, where, getCountFromServer, onSnapshot, limit, startAfter } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
 import './AdminPage.css'
@@ -75,6 +75,9 @@ export default function AdminPage() {
   const [customBounty, setCustomBounty] = useState('')
   const [publishAt, setPublishAt] = useState('')
   const [quizzes, setQuizzes] = useState([])
+  const [quizLastDoc, setQuizLastDoc] = useState(null)
+  const [quizHasMore, setQuizHasMore] = useState(false)
+  const [quizLoadingMore, setQuizLoadingMore] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   const [giftCode, setGiftCode] = useState('')
@@ -86,11 +89,28 @@ export default function AdminPage() {
 
   useEffect(() => { if (!isAdmin) navigate('/') }, [isAdmin, navigate])
 
+  const QUIZ_PAGE_SIZE = 20
+
   const fetchQuizzes = useCallback(async () => {
     if (!db) return
-    const snap = await getDocs(query(collection(db, 'quizzes'), orderBy('createdAt', 'desc')))
+    const snap = await getDocs(query(collection(db, 'quizzes'), orderBy('createdAt', 'desc'), limit(QUIZ_PAGE_SIZE)))
     setQuizzes(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    setQuizLastDoc(snap.docs[snap.docs.length - 1] ?? null)
+    setQuizHasMore(snap.docs.length === QUIZ_PAGE_SIZE)
   }, [])
+
+  const handleLoadMoreQuizzes = async () => {
+    if (quizLoadingMore || !quizHasMore || !quizLastDoc) return
+    setQuizLoadingMore(true)
+    try {
+      const snap = await getDocs(query(collection(db, 'quizzes'), orderBy('createdAt', 'desc'), startAfter(quizLastDoc), limit(QUIZ_PAGE_SIZE)))
+      setQuizzes((prev) => [...prev, ...snap.docs.map((d) => ({ id: d.id, ...d.data() }))])
+      setQuizLastDoc(snap.docs[snap.docs.length - 1] ?? null)
+      setQuizHasMore(snap.docs.length === QUIZ_PAGE_SIZE)
+    } finally {
+      setQuizLoadingMore(false)
+    }
+  }
 
   const fetchGiftTab = useCallback(() => {
     if (!db) return () => {}
@@ -487,6 +507,13 @@ export default function AdminPage() {
               </div>
             ))}
             {quizzes.length === 0 && <p className="empty-msg">등록된 문제가 없습니다</p>}
+            {quizHasMore && (
+              <div className="load-more-wrap">
+                <button className="load-more-btn" onClick={handleLoadMoreQuizzes} disabled={quizLoadingMore}>
+                  {quizLoadingMore ? <span className="spinner-sm" /> : '더 보기'}
+                </button>
+              </div>
+            )}
           </div>
         )
       )}
