@@ -4,7 +4,6 @@ import { collection, query, orderBy, getDocs, limit, startAfter } from 'firebase
 import { db } from '../firebase/config'
 import useAuthStore from '../store/useAuthStore'
 import { HiHome, HiUser, HiTicket, HiShoppingBag } from 'react-icons/hi2'
-import { HiArrowUp, HiArrowDown } from 'react-icons/hi2'
 import './QuizListPage.css'
 import { CURRENCY } from '../constants'
 import PageLoading from '../components/PageLoading'
@@ -25,7 +24,7 @@ function isNew(createdAt, challengers) {
 }
 
 export default function QuizListPage() {
-  const [sortAsc, setSortAsc] = useState(false)
+  const [sortBy, setSortBy] = useState('bounty') // 'bounty' | 'players'
   const [filter, setFilter] = useState('active')
   const navigate = useNavigate()
   const cachedUserData = useAuthStore((s) => s.userData)
@@ -76,8 +75,11 @@ export default function QuizListPage() {
         if (filter === 'solved') return !!q.solvedBy
         return true
       })
-      .sort((a, b) => sortAsc ? a.bounty - b.bounty : b.bounty - a.bounty)
-  }, [quizzes, sortAsc, filter])
+      .sort((a, b) => sortBy === 'players'
+        ? (b.activePlayers ?? 0) - (a.activePlayers ?? 0)
+        : b.bounty - a.bounty
+      )
+  }, [quizzes, sortBy, filter])
 
   if (loading) return <PageLoading />
 
@@ -86,13 +88,15 @@ export default function QuizListPage() {
       <header className="quiz-list-header">
         <h2>Qwiz</h2>
         <div className="header-controls">
-          <button className="sort-btn" onClick={() => setSortAsc((v) => !v)}>
-            현상금 {sortAsc ? <HiArrowUp /> : <HiArrowDown />}
-          </button>
+          <div className="filter-btns">
+            <button className={`filter-btn ${sortBy === 'bounty' ? 'active' : ''}`} onClick={() => setSortBy('bounty')}>현상금순</button>
+            <button className={`filter-btn ${sortBy === 'players' ? 'active' : ''}`} onClick={() => setSortBy('players')}>참여자순</button>
+          </div>
           <div className="filter-btns">
             <button className={`filter-btn ${filter === 'active' ? 'active' : ''}`} onClick={() => setFilter('active')}>진행중</button>
             <button className={`filter-btn ${filter === 'solved' ? 'active' : ''}`} onClick={() => setFilter('solved')}>종료</button>
             <button className={`filter-btn ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>전체</button>
+          </div>
           </div>
         </div>
       </header>
