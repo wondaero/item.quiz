@@ -13,7 +13,25 @@ setGlobalOptions({ maxInstances: 10, region: "asia-northeast3" });
 
 const db = getFirestore();
 
+const ADMIN_UID = "4833965068";
+
 const normalize = (s) => s.replace(/\s/g, "").toLowerCase();
+
+// Admin에게 FCM 푸시
+const notifyAdmin = async (title, body) => {
+  try {
+    const adminSnap = await db.collection("users").doc(ADMIN_UID).get();
+    const token = adminSnap.data()?.fcmToken;
+    if (!token) return;
+    await getMessaging().send({
+      token,
+      notification: { title, body },
+      webpush: { notification: { icon: "/logo1.png" } },
+    });
+  } catch (e) {
+    console.error("Admin FCM 오류", e);
+  }
+};
 
 const getKstDate = () => new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
 
@@ -204,6 +222,9 @@ exports.submitAnswer = onCall({ enforceAppCheck: false, invoker: "public" }, asy
       }, { merge: true });
     });
 
+    const quizHint = quizSnap.data()?.hints?.[0] ?? "퀴즈";
+    notifyAdmin("🎉 정답 맞춤!", `${quizHint} — ${totalGain.toLocaleString()}QW 지급`);
+
     return { result: "correct", gain: totalGain, leveledUpTo };
   } catch (e) {
     if (e.code === "already-exists" || e.message === "ALREADY_SOLVED") {
@@ -324,8 +345,30 @@ exports.requestExchange = onCall({ enforceAppCheck: false, invoker: "public" }, 
     throw new HttpsError("internal", "EXCHANGE_FAILED");
   }
 
+  // 환전 알림
+  notifyAdmin("💳 문상 신청!", `${amount.toLocaleString()}원 상품권 발급 완료`);
+
+  // 잔여 재고 확인 후 부족 알림
+  const remaining = await db.collection("giftCards")
+    .where("amount", "==", amount)
+    .where("isUsed", "==", false)
+    .get();
+  if (remaining.size <= 2) {
+    notifyAdmin("⚠️ 재고 부족!", `${amount.toLocaleString()}원 상품권 ${remaining.size}장 남음`);
+  }
+
   return { success: true };
 });
+
+// 재고 신청 알림
+exports.onAdminAlertCreated = onDocumentCreated(
+  { document: "adminAlerts/{alertId}", region: "asia-northeast3" },
+  async (event) => {
+    const data = event.data?.data();
+    if (!data || data.type !== "stock_request") return;
+    notifyAdmin("🛒 재고 신청!", `${data.amount.toLocaleString()}원 상품권 재고 요청`);
+  }
+);
 
 // RTDB presence 삭제 시 activePlayers 감소
 exports.onPresenceDeleted = onValueDeleted(
